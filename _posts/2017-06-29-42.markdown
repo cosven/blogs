@@ -1,0 +1,15 @@
+---
+layout: post
+title: "关于 PaaS CI/CD 的一些零碎感受"
+date: 2017-06-29 06:43:25 +00:00
+permalink: /blogs/42
+tags: [CI/CD, PaaS]
+---
+## 怎样持续发布
+
+参考论文： <https://www.usenix.org/system/files/login/articles/login_1410_05_klein.pdf>
+
+## 关于 CI/CD 系统
+
+- `stage`, `step` 这是两个好概念   
+- 状态机也是个好东西...

@@ -1,0 +1,144 @@
+---
+layout: post
+title: "揭开 asyncio 的神秘面纱 - 起初的生成器"
+date: 2019-03-23 04:18:25 +00:00
+permalink: /blogs/89
+tags: [iterator, asyncio, generator]
+categories: [稍微正经点的]
+---
+上篇文章中，我们说到：Python 的协程底层就是基于生成器来实现的。本文，我们会讲生成器的一些历史和相关的基础知识。
+
+在 Python 中，生成器最先是在 [PEP 255][pep255] 中被正式提出，
+如 PEP 中所写，生成器在当时主要是用来解决这样一个问题：
+
+> When a producer function has a hard enough job that it requires maintaining
+> state between values produced, most programming languages offer no pleasant
+> and efficient solution beyond adding a callback function to the producer's argument list,
+> to be called with each value produced.
+
+## 起初的生成器
+
+有木有觉得上面这段文字有点太抽象，不好懂？我们来举个例子。
+
+我们有个需求是处理斐波拉契数列前 n 项中的每一个数字，我们可以用生成器来实现它：
+
+```python
+def fib():
+    # 生成斐波拉契数列
+    i, j = 0, 1
+    while True:
+    	yield j
+    	i, j = j, i + j
+
+def handle(num):
+    # 数列数字的处理函数，我们这里省略
+    pass
+
+for num in fib():
+    if num > 1000:
+        break
+    handle(num)
+```
+
+如果不用生成器，该怎样实现呢？我们可能会这样写：
+
+```python
+class Producer:
+    def __init__(self):
+        self.i, self.j = 0, 1
+        
+    def gen(self):
+        num = self.j
+        self.i, self.j = self.j, self.i + self.j
+        return num
+
+def handle():
+    pass
+
+p = Producer()
+count = 0
+while count <= 1000:
+    handle(p.gen())
+    count += 1
+```
+
+这个实现显然比较复杂。但很多人说，我在数列生成函数中将 handle 函数作为参数传进去，也很好实现，比如：
+
+```python
+def fib(handle):
+    i, j = 0, 1
+    while True:
+    	handle(j)
+    	i, j = j, i + j
+
+def handle(num):
+    pass
+
+fib(handle)
+```
+
+没错，这个看起来也很简洁。不过这也恰好佐证了上面那段话：
+
+> most programming languages offer no pleasant and efficient solution beyond adding a callback function to the producer's argument list,to be called with each value produced.
+
+我们可以看出，生成器确实是解决这个问题的一个不错的办法。
+
+## 生成器和迭代器
+
+理解了生成器设计的初衷之后，我们回头看下上面的第二个写法。我们稍微改造一下它：
+
+```python
+class Producer:
+    def __init__(self):
+        self.i, self.j = 0, 1
+        
+    def __iter__(self):
+        return self
+        
+    def __next__(self):
+        num = self.j
+        self.i, self.j = self.j, self.i + self.j
+        if num > 1000:
+        	raise StopIteration
+        return num
+   
+for num in Producer():
+    handle(num)
+```
+
+这就是 Python 迭代器嘛。对！在一开始，生成器的功能定位就是：
+
+> a Python generator is a kind of Python iterator，but of an especially powerful kind. 
+
+为什么说生成器是一种迭代器？Python 判断一个对象是否是迭代器的标准是看这个对象是否遵守**迭代器协议** ，判断一个对象是否遵守迭代器协议主要看两个方面：
+
+1. 对象首先得实现 `__iter__` 和 `__next__` 方法
+2. 其次`__iter__` 方法必须返回它自己
+
+而生成器恰好满足了这两个条件（可以自己写个生成器，然后调用生成器的这两个方法试试）。我们平常还会经常碰到另外一个概念：**可迭代对象**。可迭代对象就是可迭代的对象，可迭代的对象就是说我们可以从这个对象拿到一个迭代器。在 Python 中，`iter` 方法可以帮我们完成这个事情，也就是说，可迭代对象和迭代器满足这样一个关系：`iter(iterable) -> iterator`。
+
+比如：在 Python 中，`list` 是个可迭代对象，所以我们经常会写这样的代码：
+
+```python
+>>> l = [1, 2, 3]
+>>> for element in l:
+...     print(element)
+```
+
+但你想过为什么我们可以这么写吗？为啥在 c 语言里面，我们访问数组元素的时候，必须要通过 `index`?
+
+因为：`list` 是个可迭代对象，我们在 Python 中使用  `for ... in ` 时，Python 会给我们生成一个迭代器对象，而如上所说：迭代器是个数据流，它可以产生数据，我们一直从里面取数据就好了，而不需要我们在代码中维护 index，Python 已经通过迭代器给我们完成了这个事情。
+
+## 小结
+
+这篇文章中，我们以 [PEP 255][pep255] 为主要参考资料，讲了生成器设计的初衷，生成器与迭代器的联系与区别。
+
+所以下面问题，你能回答了么：
+
+- [ ] 一开始的生成器是什么？它会被用于什么场景？
+- [ ] 迭代器是什么？生成器和迭代器的区别是什么，可迭代对象又是什么？
+- [ ] `for ... in` 的奥秘？
+
+我们从这可以看出，在一开始，生成器并不是为协程量身定做的，它只是一个可以让我们实现i一些需求更方便、代码写出来更好看的一个语言特性。
+
+[pep255]: https://www.python.org/dev/peps/pep-0255/

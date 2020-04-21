@@ -1,0 +1,150 @@
+---
+layout: post
+title: "SQLAlchemy 基础知识 - 认识 session"
+date: 2018-11-08 13:57:28 +00:00
+permalink: /blogs/82
+tags: [flask, sqlalchemy, basics]
+categories: [稍微正经点的]
+---
+这篇文章致力于解决以下疑问（本文以 MySQL 为例）：
+
+1. SQLAlchemy 的 session 是指什么？
+2. session 的 autoflush 参数是干什么的，我到底要不要开启它？
+3. session 的 autocommit 参数又是什么，它和 autoflush 的区别是什么？
+5. SQLAlchemy MySQL 调试小技巧
+
+## SQLAlchemy 基础
+下面是一段官方 SQLAlchemy 使用示例，我们从这个例子出发，认识 SQLAlchemy。
+
+```python
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+
+# sqlite3/mysql/postgres engine
+# 请先自己在 MySQL 中创建一个名为 test_tmp 的 database
+engine = create_engine('mysql://root@localhost/test_tmp', echo=False)
+
+Base = declarative_base()
+
+Session = sessionmaker(bind=engine)
+
+# 创建 session 时，还没有建立连接，不同的 session 对应的不同的连接
+# 通过 `show processlist` 命令可以看到
+session1 = Session()
+session2 = Session()
+
+SessionNoAutoflush = sessionmaker(bind=engine, autoflush=False)
+session3 = SessionNoAutoflush()
+
+
+class User(Base):
+    __tablename__  = 'user'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64))
+```
+
+### session 是什么？
+
+目前还不知道怎样直接给 session 下定义，但是我们可以通过它的一些用途来认识它，
+在脑海里脑补出这个东西。
+
+0. session 会在需要的时候（比如用户读取数据、更新数据时）和数据库进行通信，获取数据对象，并有一个池子来维护这些对象，保证你访问数据时不出现意外的问题
+1. session 和连接(connection) 不等同，session 通过连接和数据库进行通信
+2. session 是 Query 的入口，当你想要发起查询的时候，一般用法是：`session.Query(Model).filter_by(...).first()`
+
+如果不完全理解它，也没关系，有个大概印象即可，以后碰到具体的问题再具体分析，
+到时候就可以针对性解决。
+
+官方介绍 session 的资料：https://docs.sqlalchemy.org/en/latest/orm/session_basics.html#what-does-the-session-do
+
+### autoflush 参数
+
+首先，学习两个概念：flush 和 commit。
+
+- flush 的意思就是将当前 session 存在的变更发给数据库，换句话说，就是让数据库执行 SQL 语句。
+- commit 的意思是提交一个事务。一个事务里面可能有一条或者多条 SQL 语句
+- SQLAlchemy 在执行 commit 之前，肯定会执行 flush 操作；而在执行 flush 的时候，不一定执行 commit，这个主要视 autocommit 参数而定，后面会详细讲
+
+当 autoflush 为 True 时（默认是 True），session 进行查询之前**会自动**把当前累计的修改发送到数据库（**注意：autoflush 并不是说在 session.add 之后会自动 flush**），举个例子（结合开始的代码）：
+
+```python
+# 创建了一个对象，这时，这个对象几乎没有任何意义，session 不知道它的存在
+>>> user = User(name='cosven')
+>>> 
+# session1.add 这个对象之后，它被 session 放到它的对象池里面去了，但这时不会发送任何 SQL 语句给数据库，数据库目前仍然不知道它的存在
+>>>  session1.add(user)
+>>>  
+# session1.Query 执行之前，由于 autoflush 是 True，session1 会先执行 session1.flush()，然后再发送查询语句
+# 当 session 进行 flush 操作时，session 会先建立（选）一个和数据库的连接，然后将创建 user 的 SQL 语句发送给数据库
+# 所以，这个查询是能查到 user 的
+>>> session1.query(User).filter_by(name='cosven').first()
+<__main__.User object at 0x1108f04e0>
+```
+
+如果 session 的 autoflush 为 False 的话，session 进行查询之前**不会**把当前累计的修改发送到数据库，而直接发送查询语句，所以下面这个查询是查不到对象的。
+
+```python
+>>> session3.add(User(name='haha'))
+>>> session3.query(User).filter_by(name='haha').first()  # None
+```
+
+再重复的总结一下：
+
+session.flush 的意义：session 计算自己积累的变更，将变更对应的 SQL 语句发送给数据库。
+autoflush 的意义：session 在进行查询之前，自动的进行一次 flush 操作。
+
+### autocommit 参数
+
+commit 对应的概念是事务（transaction），默认情况下，session 参数 autocommit 的值是 False，SQLAlchemy 也推荐将它设置为 False。
+
+注：MySQL client 默认是将 autocommit 设为 True 的，所以我们在 cli 中执行一条 SQL 语句，数据库的数据就会发生变化
+
+这里复习一下一个基础知识点：在一个事务被提交之前，事务里面的修改只对当前事务可见，其它事务看不见。什么意思？我们看个例子
+
+```python
+# ps: session1 的 autocommit 参数为 False, autoflush 参数为 True
+# 当 session1 执行 add 操作时，
+>>> session1.add(User(name='miao'))
+
+# session1 中是可以查到这个 user 的
+>>> session1.query(User).filter_by(name='miao').first()
+<__main__.User object at 0x1108f00000>
+
+# session3 中查不到
+>>> session3.query(User).filter_by(name='miao').first()  # None
+
+# 让 session1 提交一下当前的事务
+>>> session1.commit()
+
+# 再从 session3 中查
+>>> session3.query(User).filter_by(name='miao').first() is not None
+True
+```
+
+事务不仅可以提交，还可以 rollback，这里就不讲。
+
+### SQLAlchemy MySQL 调试小技巧
+**为 MySQL 打开查询 log**
+
+```
+SET GLOBAL log_output = "FILE"; the default.
+SET GLOBAL general_log_file = "/path/to/your/mysql.log";
+SET GLOBAL general_log = 'ON';
+```
+然后在 shell 中 `tail -f mysql.log`，这样一来，当 MySQL 收到请求时，你就能看到一条日志，
+这样可以方便你判断 session 执行什么操作时，会发送 SQL 语句，什么时候建立连接。
+
+日志示例：
+```
+2018-11-08T15:12:41.332513Z	   53 Query	commit
+2018-11-08T15:12:41.333753Z	   53 Query	rollback
+2018-11-08T15:12:45.999996Z	   43 Query	select * from user
+```
+
+**将上面的脚本导入 python 或者 ipython**
+
+`python -i test.py`

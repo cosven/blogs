@@ -1,0 +1,387 @@
+---
+layout: post
+title: "Paper Reading: What Bugs Live in the Cloud? A Study of 3000+ Issues in Cloud Systems"
+date: 2019-09-09 15:26:04 +00:00
+permalink: /blogs/101
+tags: [reading, paper]
+categories: [稍微正经点的]
+---
+## 读后感
+
+对 issue 进行合理的分类整理这件事情本身需要一定的经验，这篇 paper 对 issue 进行了多维度分类，
+非常有参考价值。另外，paper 对 issue 出现的原因进行了统计学的分析，并给出他们自己的一些猜测，
+这个统计结果对我们找 bug、设计测试用例具有指导性的意义。
+
+读完整篇 paper，有利于拓展我们的思维，形成一些方法论，尤其是我们在 review bug 的时候：
+
+- bug 出现原因，原因的原因
+  - 硬件有啥问题，宕机/慢/数据丢失
+  - 软件又是什么问题
+    - 错误处理
+    - 配置
+    - hang 住
+    - data race
+    - 其它逻辑问题
+- bug 影响范围、类型
+  - 单机、集群
+  - 多长时间
+  - 性能、稳定性、可用性
+  - 数据不一致
+  - 影响扩展
+- bug 所属组件
+
+一篇 paper 所能提供的内容总是有限的，我认为这篇 paper 主要精力还是花在统计和分类上，
+但是从这个统计分类结果中，我们能领悟什么、学习到什么、总结出什么结论，就看我们自己的造化了。
+
+---------------------------------------------------------------------------
+
+PDF 链接：https://ucare.cs.uchicago.edu/pdf/socc14-cbs.pdf
+
+> **摘要**：我们回顾了 6 个的云系统(cloud system)（Hadoop MapReduce, HDFS, HBase, Cassandra, ZooKeeper）
+三年间出现的 21399 个 issue。从这里面，选出了 3655 个重要的(vital) issues 并进行了分类，
+并把结果整理成一个数据库 `Cloud Bug Study database (CbsDB)`。
+
+## 介绍
+
+### 动机
+
+> cloud system 发展迅速，并且越来越重要。但这些系统都存在 bug，它们的稳定性还有很高的提升空间。
+
+> This paper was started with a simple question: why are cloud systems not
+100% dependable? In our attempt to pro- vide an intelligent answer,
+the question has led us to many more intricate questions.
+Why is it hard to develop a fully reliable cloud systems?
+What bugs “live” in cloud systems? How should we properly classify bugs
+in cloud systems? Are there new classes of bugs unique to cloud systems?
+What types of bugs can only be found in deployment?
+Why existing tools (unit tests, model checkers, etc.)
+cannot capture those bugs prior to deployment?
+And finally, how should cloud dependability tools evolve in the near future?
+
+> 为了定位上面这些问题，网上的一些博客并不足够，但好在开源系统的 issue 是公开的。
+
+### Cloud Bug Study
+
+> 这篇论文展示了我们一年内对 6 个系统的 issues 研究成果。
+
+> 总共有 2 万多个 issue，我们选了 3655 个重要的，类似代码重构、单元测试、文档内的 issue
+都属于不重要的类型，不在他们的研究范围内。
+
+> 对于每个重要的 issue，我们分析了 patch 和开发者对 issue 的回复。他们对 issue 进行了多种分类。
+
+> First, we categorize them by aspect such as reliability, performance, availability,
+security, data consistency, scalability, topology and QoS.
+> Second, we introduce hardware type and failure mode labels for issues
+that involve hardware failures.
+> Next, we dissect vital issues by a wide range of software bug types such as
+error handling, optimization, configuration, data race, hang, space, load and logic bugs.
+> Fourth, we also study the issues by im- plication such as failed operations,
+performance problems, component downtimes, data loss, staleness, and corruption.
+> In addition to all of these, we also add bug scope labels to measure bug impacts
+(a single machine, multiple machines, or the whole cluster).
+
+我觉得这几个分类挺值得我们学习的，有经验才能总结出来。
+
+> 我们分类的产品就是 CbsDB，它很好用
+
+### 发现
+
+发现无疑是非常激动人心的部分啦。
+
+> New bugs on the block：如果按照 aspect 来分，可靠性占 45%，性能占 22%，
+可用性占 16%，这三类占了绝大部分。除此以外，一些 cloud system 独有的 bug：
+数据一致性 5%，可扩展性（scalability）2%，拓扑 1%。
+
+> Killer bugs：139 个。Their existence (139 issues in our study) implies that
+cascades of failures happen in subtle ways and the no single point of failure
+principle is not always upheld.
+
+“killer bugs” (i.e., bugs that simultaneously affect multiple nodes or the entire cluster).
+
+single point of failure: 单点故障。
+
+> Hardware can fail, but handling is not easy: Dealing with hardware failures at the
+software level remains a challenge
+
+非常有意思的一个结论，这大概也是 Chaos Engineering 的意义所在吧。
+
+> Vexing software bugs: Cloud systems face a variety of software bugs:
+logic-specific (29%), error handling (18%), optimization (15%), configuration (14%),
+data race (12%), hang (4%), space (4%) and load (4%) issues.
+
+逻辑错误排第一，这和我自己这一个月的工作感受也是相符的。另外，我觉得这里一个有趣的点是作者把
+error handling 单独拿出来（如果是我，我可能觉得错误处理也算是代码逻辑的一部分），
+除了这篇 paper，另外有篇 paper 专门说了 error handling 的地方是多么容易出现 bug。
+这可能是我们可以注意的一个点。
+
+> Availability first, correctness second
+
+> The need for multi-dimensional dependability tools: 多维度 + 维度组合
+
+
+## Methodology
+
+> In this section, we describe our methodology (方法论), specifically our choice
+of target systems, the base issue repositories, our issue classifications
+and the resulting database.
+
+> **Target Systems**
+>
+> - Hadoop MapReduce representing distributed computing frameworks
+> - Hadoop File System (HDFS) representing scalable storage systems
+> - HBase and Cassandra representing distributed key-value stores (also known as NoSQL systems)
+> - ZooKeeper representing synchronization services
+> - Flume representing streaming systems
+
+这 6 个系统确实很经典了，也很有代表性。
+
+> **Issue Repositories**
+
+> **Issue Classifications** 我们做的第一个分类是 *issue type* (“miscellaneous” vs. “vital”).
+
+他们也说了不能用开发者打的标签，因为一些琐碎的 bug 也会被开发者打上重要的标签，
+恩，我们也确实遇到了相似的问题。
+
+> 我们仔细的阅读了每个(vital) issue，包括 patch 和讨论。
+> 对于每个重要的 issue，我们都打上了 aspect 标签。如果某个 issue 涉及到硬件问题，
+我们还会添加 *hardware type* 和 *failure mode* 的标签。接着，我们准确详尽的描述
+了 *software bug types*. 最后，我们加上了 *implication* 标签。作为一个说明，
+一个 issue 可以有多个标签。有趣的是，我们发现一个 bug 可以影响多台机器甚至整个集群。
+为了这个目的，我们使用了 *bug scope* 标签。除了一般的分类，它们还加了 *component*
+标签来标记 bug 属于哪个组件。
+
+> Cloud Bug Study DB
+
+> Threats to validity: 为了保证有效性，每个 issue 都最少有两个人达成一致意见。
+
+## Issue Aspects
+
+### Reliability, Performance, and Availability Aspects
+
+> Reliability (45%), performance (22%) and availability (16%) are the three largest categories of aspect.
+
+### Data Consistency Aspect
+
+> In reality, there are several cases (5%) where data consistency is violated
+and users get stale data or the system’s behavior becomes erratic.
+The root causes mainly come from logic bugs in operational protocols (43%),
+data races (29%) and failure handling problems (10%).
+
+非常有指导意义！
+
+> **Buggy logic in operational protocols** esides the main read/write protocols,
+many other operational protocols (e.g., bootstrap, cloning, fsck) touch and modify data,
+and bugs within them can cause data inconsistency.
+
+> **Concurrency bugs and node failures** Intra-node data races are a major culprit
+of data inconsistency. Inter-node data races (§6.3) are also a major root cause.
+
+data race: 竞态条件
+
+> **Summary**: Operational protocols modify data replicas, but they tend to be less tested
+than the main protocols, and thus often carry data inconsistency bugs.
+We also find an interesting scenario: when cloud systems detect data inconsistencies
+(via some assertions), they often decide to continue running even with incorrectness
+and potential catastrophes in the fu- ture. Availability seems to be more important than consistency;
+perhaps, a downtime “looks worse” than running with incorrectness.
+
+有点同感：辅助工具也是非常重要的，而这些工具往往不那么被重视。置于 availability > correctness 这一点，
+在我们这边，感受不是很明显。
+
+### Scalability Aspect
+
+> Scalability aspect accounts for 2% of cloud issues. Although the number is small,
+scalability issues are interesting because they are hard to find in small-scale testing.
+Within this category, software optimization (29%), space (21%) and load (21%) problems
+are the dominant root causes. In terms of implications, performance problems (52%),
+component downtimes (27%), and failed operations (16%) are dominant.
+To understand deeper the root problems, we categorize scalability issues into
+four axes of scale: cluster size, data size, load, and failure.
+
+> **Scale of cluster size**
+
+> **Scale of data size**
+
+> **Scale of request load**
+
+上面这三点，感觉还是经常听到的。
+
+> **Scale of failure**
+
+这里，论文主要说的是错误恢复，这个，我自己听的似乎相对比较少一点。
+
+> **Summary**: Scalability problems surface late in deployment, and this is undesirable
+because users are affected. More research is needed to unearth scalability problems prior
+to deployment. We also find that main read/write protocols tend to be robust as they are
+implicitly tested all the time by live user workloads. On the other hand,
+operational protocols (recovery, boot, etc.) often carry scalability bugs.
+Therefore, operational protocols need to be tested frequently at scale (e.g., with “live drills”).
+Generic solutions such as loose coupling, decentralization, batching and throttling are popular
+but sometimes they are not enough; some problems require fixing domain-specific algorithms.
+
+### Topology Aspect
+
+> In several cases (1%), protocols of cloud systems do not work properly on some network topology.
+We call this topology bugs; they are also intriguing as they are typically unseen in predeployment.
+Below we describe three matters that pertain to topology bugs.
+
+> **a Cross-DC awareness**
+
+> **Rack awareness**
+
+> **New layering architecture**
+
+> **总结**: 用户期望系统在不同的拓扑结构下都能正常工作。拓扑结构相关的测试和验证仍然很少，
+可靠性工具需要注意这方面。另外值得强调的是：拓扑架构调整后，一些受影响的逻辑往往不会及时调整。
+
+### QoS Aspect
+
+
+## “Killer Bugs”
+
+> This particular study is important because although the “no-SPoF” principle has been preached
+extensively within the cloud community, our study reveals that SPoF still exists in many forms,
+which we present below.
+
+哈哈哈
+
+> **Positive feedback loop**
+
+和雪崩有点像
+
+> **Buggy failover**
+
+惨！
+
+> **Repeated bugs after failover**
+
+> **A small window of SPoF**
+
+> **Buggy start-up code**
+
+> **Distributed deadlock**
+
+> **Scalability and QoS bugs**
+
+> **Summary**: The concept of no-SPoF is not just about a simple failover.
+Our study reveals many forms of killer bugs that can cripple an entire cluster
+(potentially hundreds or thousands of nodes). Killer bugs should receive more
+attention in both offline testing and online failure management.
+
+感觉他对高可用常见的一些失败模式进行了较好的总结。
+
+另外，论文里面有张热力图，告诉我们导致 Killer Bugs 的原因占比，我概括一下，大概是：
+- 硬件问题（Node, Net, Disk）里面 Node 占最大比 17/20
+- 硬件失败（Stop, Limp, Corrupt）模式，Stop 占最大 18/20
+- 软件问题（Logic, Err-handling, Load, Hang, Config, Race, Space, Opt)，
+  logic 占最多 1/2
+
+## Hardware Issues
+
+> **Fail-stop**
+
+> **Corruption**
+
+corruption 对应数据损坏，checksum 不 match。
+
+> **Limp Mode**
+
+Limp 对应慢
+
+> **Summary**: As hardware can fail, “reliability must come from software” .
+Unfortunately, dealing with hardware failures is not trivial.
+Often, cloud systems focus on “what” can fail but not so much on the scale or
+the “when” (e.g., subsequent failures during recovery). Beyond the failstop model,
+cloud systems must also address other failure modes such as corruption and limpware.
+Reliability from software becomes more challenging.
+
+## Software Issues
+
+> 不能分类的 bug 分为 logic bug，可以分的如下
+
+### Error Handling
+
+> Both hardware and software can fail, and thus error-handling code is a necessity.
+Unfortunately, it is a general knowledge that error-handling code introduces complexity
+and is prone to bugs. In our study, error-handling bugs are the 2nd largest category (18%)
+after logic bugs and can lead to all kinds of implications. Below,
+we break down error-handling bugs into three classes of problems.
+
+> **Error/failure detection**
+
+感觉 golang 有点机智。
+
+> **Error propagation**
+
+> **Error handing**
+
+### Configuration
+
+大概就是两类：一类是错误配置，可能程序没有校验啊，啥的；另外一方面是用户想要更多的控制，
+于是就会暴露更多的配置项。这篇论文对解决方案没有给出啥结论。
+
+### Data Races
+
+大概是说：单机 data race 很多人研究了很多年，分布式 data race 研究仍待进行。
+
+### Hang
+
+> **Silent hangs** Timeouts
+
+> **Overlooked limp mode**
+
+> **Unserved tasks**
+
+> **Distributed deadlock**
+
+### Space
+
+> **Big data cleanup**
+
+让我想起了 Compaction
+
+> **Insufficient space**
+
+磁盘满了，能不能模拟一发？
+
+> **Resource leak**
+
+### Load
+
+> **Java GC**
+
+> **Beyond limit** -> OOM, backlogs
+
+> **Operational loads** -> too many error log
+
+## Implications
+
+> Throughout previous sections, we have implicitly presented how hardware and software failures
+can lead to a wide range of implications, specifically failed operations (42%),
+performance problems (23%), downtimes (18%), data loss (7%), corruption (5%), and staleness (5%),
+as shown in Figure 4b.
+
+> In reverse, Figure 5 also depicts how almost every implication can be caused by
+all kinds of hardware and software faults. As an implication, if a system attempts to
+ensure reliability on just one axis (e.g., no data loss), the system must deploy all
+bugfinding tools that can catch all software fault types and ensure the correctness of
+all handlings of hardware failures. Building a highly dependable cloud system seems to be a distant goal.
+
+## Other Use Cases of CBSDB
+
+1. Longest time to resolve and most commented
+2. Top 1% or 10%
+3. Per-component analysis
+4. Bug evolution
+
+## Related Work
+
+## Conclusion
+
+> We perform the first bug study of cloud systems. Our study brings new insights on
+some of the most vexing problems in cloud systems. We show a wide range of intricate bugs,
+many of which are unique to distributed cloud systems (e.g., scalability, topology, and killer bugs).
+We believe our work is timely especially because cloud systems are considerably
+still “young” in their development. We hope (and believe) that our findings and
+the future availability of CBSDB can be beneficial for the cloud research community
+in diverse areas as well as to cloud system developers.

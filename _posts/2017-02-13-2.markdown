@@ -1,0 +1,14 @@
+---
+layout: post
+title: "REST API 设计"
+date: 2017-02-13 02:40:12 +00:00
+permalink: /blogs/2
+tags: [API, REST]
+---
+`bottom-up` REST API Design learning notes.
+
+### principles collection
+
+> - If you want to be RESTful don't think of the verb to carry out an action, think of the state you want the resource to be in after the client has done something.
+
+### 相关概念

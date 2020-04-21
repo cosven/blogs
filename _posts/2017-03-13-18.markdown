@@ -1,0 +1,35 @@
+---
+layout: post
+title: "2017 日常 TODO 记录"
+date: 2017-03-13 02:00:24 +00:00
+permalink: /blogs/18
+tags: [TODO]
+---
+根据：
+
+- 总是要回忆，还想不起来，有点难过...
+- 无聊时可以找到事情干
+
+------------------
+
+- [ ] 操作系统书籍
+  - [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/)
+- [x] 明确下 google bazel 和 [facebook](https://buckbuild.com) 的构建工具到底干了啥？
+- [ ] 了解 django REST framework
+- [ ] 博客相关改进或者增强
+  - [ ] 添加 REST API，然后考虑使用 JQuery，Vue.js？
+  - [ ] FeelUOwn 和博客同步歌曲状态
+  - [ ] 博客的搜索技能（zinnia 使用的[搜索算法](http://docs.django-blog-zinnia.com/en/latest/topics/search_engines.html)（貌似没啥特殊的））
+    - [x] (2017-3-18 2:25) 简陋的搜索功能
+  - [ ] 知识图谱
+  - [ ] 事件、流水功能
+  - [ ] 博客使用缓存 cache-page
+- [ ] 看看有啥地方可以散散心的
+  - 比如短程火车啊...
+- [ ] 学习下拍照相关的？
+- [x] 租房等等等事情？
+- [ ] 电脑和手机听歌同步？
+- [ ] 学下 Haskell？
+- [ ] 看一下这篇文章[项目中的常见算法](http://www.infoq.com/cn/news/2013/11/Core-algorithms-deployed)
+- [ ] 可以看的电影列表
+  - [x] 我爱你 #韩国电影

@@ -1,0 +1,82 @@
+---
+layout: post
+title: "头疼的位运算"
+date: 2018-03-13 13:47:35 +00:00
+permalink: /blogs/61
+categories: [稍微正经点的]
+---
+大学没学好也不能怪我，真的，况且我还盲羊补牢呐。。。
+
+## 大学计算机基础
+自问一个问题：32 bit 的 int 能容纳的整数个数共多少？最大的那一个整数的值是多少？
+
+- 能容纳的整个个数：2*31 * 2。
+- 最大的那一个整数的值：2^0 + 2^1 + ... + 2^30（问题来了，等比数列求和怎么求 2333）
+
+（进入正题
+
+- 对于 32 bit 的 int 来说：1 用二进制表示即为 `0 0(重复30次)1`，即总共 31 个 0 和 1 个 1
+- 对于 32 bit 的 int 来说：-1 用二进制表示即为 `1 1(重复 31 次)`，即总共 32 个 1（问题又来了，为啥哩？请看原码，补码等概念 2333，白学了 ?‍♀️）
+
+使用下个这个程序进行相关测试
+
+```c
+#include<stdio.h>
+
+int main(){
+    int a, b;
+    a = (1 << 30) - 1 + (1 << 30) ;
+    b = -1;
+    printf("%d %d %d", a, b, a&b);
+    return a;
+}
+```
+
+另外一个问题：计算机是怎样计算一个数的负数的？setbit 吗？（先不研究，应该是门电路之类的把）
+
+还有一个问题：Python 是怎样计算的呢？[参考资料一](https://stackoverflow.com/questions/37135106/what-is-good-way-to-negate-an-integer-in-binary-operation-in-python) 其中的一个重要结论是 Python 的 int 是不定长的，不能通过类似 setbit 的操作将一个正数变成负数。
+
+## 运用
+#### 判断一个数是 0 还是 1
+
+```python
+if x ^ 0:
+    x == 1
+else:
+    x == 0
+```
+
+#### 怎样判断一个数用 2 进制表示时，最后一个 bit 是 0 还是 1？
+
+```python
+if x & 1:
+    last_bit = 1
+else:
+    last_bit = 0
+```
+
+#### 不使用 + 号，将一个包含二进制数的列表转换为 10 进制
+（不过这个操作并没有什么用的赶脚）
+
+```python
+def get_num(l):
+    # l is a deque objct
+    s = 0b0
+    while True:
+        try:
+            n = l.popleft()
+        except IndexError:
+            break
+        s |= n
+        s <<= 1
+    s >>= 1
+    return s
+```
+
+## 延伸
+### 计算机是什么判断 a>b 的？
+类似问题：计算机判断 a>b 的时候是不是计算 a - b 的值，然后用它和 0 作比较得到的呢？
+
+[https://cs.stackexchange.com/questions/7074/how-does-the-computer-determine-whether-a-number-is-smaller-or-greater-than-anot](参考链接)
+
+看样纸是通过硬件来实现了，不需要计算 a - b 的值。

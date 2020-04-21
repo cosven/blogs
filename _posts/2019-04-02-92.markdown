@@ -1,0 +1,59 @@
+---
+layout: post
+title: "memcached 协议 RFC 阅读笔记"
+date: 2019-04-02 12:51:07 +00:00
+permalink: /blogs/92
+tags: [memcached, tcp, protocol]
+categories: [稍微正经点的]
+---
+阅读这个 RFC 可能的收获：自己设计协议可以参考
+
+- [x] 怎样分消息？
+- [x] 错误信息该怎样返回？
+
+memcached 客户端通过 TCP 连接和服务端通信（memcachd 也支持 UDP，详情见后面）。
+服务端监听一个端口，客户端连接上去，发送命令给服务端，读取响应，最后关闭连接。
+
+客户端不需要发送命令来关闭连接，不需要了直接关闭即可。鼓励客户端缓存连接，
+memcached 可以有效的处理大量的连接（可以超过 1k）。
+
+memcached 协议中有两种数据：文本行（text lines）和非结构化数据（unstructure data）。
+
+text lines 会用于客户端的命令和服务端的返回中。
+客户端存储或者取回数据的时候可能会用到 unstructure data。
+
+text lines 总是以 `\r\n` 结束， unstructure data 也是。
+`\r\n` 是允许出现在 unstructure data 中的。所以，
+客户端要根据 length 信息来分块。
+
+命令
+------
+
+memcached 的命令有三种类型。
+
+Storage commands: "set", "add", "replace", "append", "prepend" and "cas".
+这种类型的命令，客户端先发送一行命令文本，然后发送数据块。然后客户端等待接收响应，
+响应也是一行文字，这里面会告诉包含成功与否的信息。
+
+Retrieval commands: "get" and "gets".
+客户端先送一行命令，里面包含所有的 key。服务端找到这些 key 之后，
+一个 key 就对应一行文本响应接一个 data block，最后以 ``END`` 行结束。
+
+其它命令：其它命令不涉及 unstructure data，它们都是客户端发送一行文本命令，
+然后等服务端返回一行文本或者多行+``END``文本.
+
+错误
+-------
+
+当一条命令执行失败时，服务端可能会返回错误，错误有三种类型：
+
+- `ERROR\r\n` : 客户端发送了一个不存在的命令
+- `CLIENT_ERROR <error>\r\n` : 客户端发送的命令格式有问题、或者参数有问题等，
+error 是一个 human-readable 字符串。
+- `SERVER_ERROR <error>\r\n` : 服务端发生错误（正常情况不会发生）。
+服务端在返回错误后，会关闭连接。
+
+个人感受
+-----------
+
+和 HTTP 协议大同小异，都是一个头+数据块。

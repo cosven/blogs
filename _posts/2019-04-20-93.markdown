@@ -1,0 +1,109 @@
+---
+layout: post
+title: "Linux 桌面环境使用经验"
+date: 2019-04-20 14:33:23 +00:00
+permalink: /blogs/93
+tags: [linux, kde, gnome]
+categories: [工具啥的]
+---
+记录一下自己过去的使用感受和经验，避免重复踩坑。都是一些琐碎的事情。
+
+以前的使用记录：
+
+- [试用 KDE - 扯淡篇](http://cosven.me/blogs/72)
+- [试用 KDE - 解决字体渲染问题](http://cosven.me/blogs/73)
+
+## 系统初始化
+ 
+
+**配置与脚本**
+
+- rcfiles `git clone git@github.com:cosven/rcfiles.git`
+- Emacs `git clone git@github.com:cosven/.emacs.d.git`
+
+**字典 - goldendict**
+
+- 在这里下载词典 https://github.com/skywind3000/ECDICT
+- goldendict 在 Plsama 环境下快捷键可能会失效，建议给它设置一个全局快捷键。
+  全局快捷键运行 goldendict，让它弹窗。弹窗时，可能会弹出 menu bar，一个 workaround 是隐藏它。
+  https://github.com/goldendict/goldendict/issues/739
+
+另外，在浏览器上安装 Google Translate 插件。
+
+**输入法 - fcitx + Google Pinyin**
+
+- 开机后第一次使用，打字时可能会看不到 popup，重启一下 fcitx 即可
+
+**Shadowsocks-qt5**
+
+去[这个页面](https://github.com/shadowsocks/shadowsocks-qt5/releases) 下载一个 AppImage
+
+然后使用 `--appimage-extract` 指令解压出 desktop 和 icon 文件，自己编辑一下 desktop 文件，
+放到 `~/.local/share/applications/`。
+
+浏览器上装个 SwitchOmega 插件，bypass list 文件参考： https://gist.github.com/cosven/db4fd74af4ceb5125969cefb970c2fce
+
+**离线文档 - zeal（可选）**
+
+
+## 软件对比
+
+**GNOME 和 KDE**
+
+在 2019 年初，我个人感觉 GNOME 唯一的优势是可以更好的处理：HiDPI 显示屏 + 普通显示屏。
+而 KDE 只能统一一种分辨率。据说这是 Xorg 的问题，等 KDE on wayland？
+
+**Chromium 和 Firefox**
+
+Chromium 一个很头疼的问题就是我切换桌面环境的时候，需要重新登录，cookie 啥的都没了，而 firefox 不会。
+但是 firefox 是真的难用，下载的交互和 IE 一样，还尝试打开文件，很奇怪。另外，地址栏的弹窗似乎总是置顶的，
+感觉是个 bug。
+
+_UPDATE 2019-4-23_: Chromium 内置了 KDE wallet 的支持，disable 它，就不需要登录了。
+
+**Terminal Emulator: tilix 和 Konsole**
+
+**albert 等东西不是很好用**
+
+**snapd 是个大坑**
+
+1. 很多 snap 的应用似乎都没人维护了，比如 docker
+2. 对比 snap 和 AppImage，感觉 AppImage 生态要好些，用起来也比较方便
+
+**截图**
+
+用 [flameshot](https://github.com/lupoDharkael/flameshot) 可以达到类似 wechat/qq 截图那样的效果
+
+## 快捷键
+
+- Alt-F2 在 KDE 下是唤起 Plasma Search。在 GNOME 下是运行命令。
+
+**Ctrl-Alt-H, Ctrl-Alt-L 切换 workspace**
+
+**调换 win 和 alt**
+
+- Apple 内置键盘参考 arch 文档切换 https://wiki.archlinux.org/index.php/Apple_Keyboard#Use_un-apple-keyboard
+- HHKB 切换第五个开光
+- KDE settings 中的 “swap alt 和 win” 设置没有从根本上切换这两个键，用起来很难受
+
+**F7,F8,F9 切换成 Media 快捷键**
+
+**terminal 复制、粘贴**
+
+改成 Alt-C，Alt-V。
+
+## 常见问题
+
+**突如其来的高 CPU**
+
+1. 检查 chrome 页面是否有动画、gif 等（其实还包括 Slack 等一些基于 webkit 的应用）
+
+**不能完全睡眠**
+
+（不确定下面这个方案是否真的可行，目前看似乎可以）
+参考这个 https://wiki.archlinux.org/index.php/Mac#Wake_Up_After_Suspend
+
+- ARPT 代表 wifi
+- LID0 代表笔记本盖子
+
+注：还有的人猜测是 USB 导致的，也有人猜测是鼠标导致的，我感觉把这些全部设置为 disable 就好了。

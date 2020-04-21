@@ -1,0 +1,35 @@
+---
+layout: post
+title: "博客 markdown 语法支持测试"
+date: 2018-03-14 13:50:50 +00:00
+permalink: /blogs/64
+tags: [瞎闹]
+---
+### checklist
+
+- [ ] 喵
+- [X] 喵
+
+### 数学公式
+
+When $\(a \ne 0\)$, there are two solutions to $\(ax^2 + bx + c = 0\)$ and they are
+  $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}.$$
+  
+
+### 表格
+
+| |matching|ranking |
+|--|--|--|
+| 预测内容|一个query和一个doc之间的匹配度|一系列doc的排序 |
+| 模型|f(q,d)|f(q,{d1,d2...dn}) |
+| 目标|一个query和doc的正确匹配|正确给doc排序 |
+
+#### 带缩进的表格
+
+1. 哈哈哈
+2. 喵，支持
+    | |matching|ranking |
+    |--|--|--|
+    | 预测内容|一个query和一个doc之间的匹配度|一系列doc的排序 |
+    | 模型|f(q,d)|f(q,{d1,d2...dn}) |
+    | 目标|一个query和doc的正确匹配|正确给doc排序 |

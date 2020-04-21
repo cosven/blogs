@@ -1,0 +1,47 @@
+---
+layout: post
+title: "断点续传（调研总结篇）"
+date: 2017-02-20 10:27:15 +00:00
+permalink: /blogs/10
+tags: [resumable upload]
+categories: [稍微正经点的]
+---
+# 断点续传
+继上个 [调研笔记篇](/blogs/8) 之后，有了这个。
+
+实现断点续传，最关键的问题就是：文件上传一半失败了，怎样从当前位置重新开始？
+
+文件上传还有个问题：有时需要附带文件的 metadata 信息嘛，这里也记录一下他们的方案。
+
+### Google Drive Solution
+
+要进行一个 resumable upload, 它要求你首先发一个 `POST` 请求给 server，这个请求里面可以包含该文件的 metadata（使用 `multipart/related` 这个东西实现）. server 会把 response headers 里的 `Location` 字段里放一个 url，url 就是你下次用来上传的 url，叫做 `resumable session URI`。里面包含一个 upload_id 的 query 参数，用来标记你是要上传哪个文件。
+
+接着，就可以把文件拆成多个部分（以 256KB (256x1024 bytes) 为基本单位，它的倍数，最后一部分随便）。每次可以发一个 `PUT` 请求给 server。请求中要包含 `Content-Length`，当前 chunk 的 bytes。还要有一个 `Content-Range` 子段，比如：`Content-Range: bytes 0-524287/2000000`。万一失败了咋办呢？
+
+失败了咋办：发一个 `PUT` 请求到 `resumable session URI`，在请求的 header 中放一个 `Content-Range` 字段，把它设置成 `*/20000000`(假如文件总大小是 20000000 bytes)或者 `*/*` 也行。如果文件没有传完 server 会返回 **308 Resume Incomplete**，并且在 header 里面会有一个 `Range` 字段，比如：`Range: bytes=0-42` 这样就知道已经传了 43 个 bytes，之后的请求要传 `43-1999999` 这个部分。
+
+传完了，server 会返回 200 或者 201。
+
+所以：Google 就是利用 `Content-Range`, `Range` 这两个 header 字段，让客户端和服务端之间互相了解上传信息。server 通过这两个字段来判断是否上传完成，并告诉 client。
+
+**不过有个问题**：308 status code 到底是不是 Resume Incomplete 是个问题。服务端 header 中包含 Range 字段也值得商榷。
+
+### Dropbox Solution
+
+Dropbox 它没有用 `Content-Range` 和 `Range` 等字段，它自己在 header 中设计了一个 `Dropbox-Api-Arg` 的字段，在这个字段的值里面，可以在值里面写入 offset 到达类似的目的。其他大同小异。
+
+至于 metadata，client 可以在上传结束的时候带一些参数。（貌似没有怎么考虑这个事情）。
+
+在 Dropbox 这个方案中，是由客户端主动告诉 server，上传是否完成。
+
+### Baiduyun Solution
+
+百度云的方式比较机智：不是说小文件传起来很方面么，百度云会在你上传小文件成功之后返回给你这个文件的 md5 值。同时它允许你传小文件时带一个参数，标记这个文件为 tmpfile。  
+然后你要传大文件，是吧？你自己把大文件拆成小文件，然后标记一下这个小文件时 tmpfile，最后再调用一个接口：createSuperfile，在调用的时候需要一个参数：block_list，这个里面放那些小文件的 md5 值。
+
+### Tus Solution
+
+Tus 在 header 中弄了个 `Upload-Offset` 字段来标记 offset，弄了个 `Upload-Metadata` 字段来表示文件的 metadata。
+
+总的来说：感觉 Tus 有点扯淡。其它的都还行吧。Google 的比较原生一点，Dropbox 定制化了，baidyun 的有点机智。

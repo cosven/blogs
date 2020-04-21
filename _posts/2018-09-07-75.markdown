@@ -1,0 +1,99 @@
+---
+layout: post
+title: "React 基础知识学习笔记"
+date: 2018-09-07 11:24:26 +00:00
+permalink: /blogs/75
+tags: [notes, react, front-end]
+categories: [稍微正经点的]
+---
+前言：之前也写了上千行和 React 相关的代码了，不过都是复制粘贴，或者无脑模仿。
+自己算是个后端工程师，自己经常会吐槽前端开发，尤其是现在的 React。
+眼看着新的工作又要使用 React，赶紧把它的一些基础知识学习一下。
+
+主要参考资料：
+
+- https://reactjs.org/tutorial/tutorial.html#overview
+
+## 基本概念
+
+> React is a declarative, efficient, and flexible JavaScript library
+> for building user interfaces. It lets you compose complex UIs from
+> small and isolated pieces of code called “components”.
+
+React 有不同类别的 **components**，React.Components 是最基础的。
+我们可以通过编写一个类继承它，这样就构造了一个新的 Component。
+
+一个 Component 会接受一些参数，这些参数保存在它的 =props= 属性中。
+Component 通过 `render` 方法返回视图用于展示给用户，返回的东西的学名叫做 **React element** 。
+比如 `React.createElement('div')` 就可以创建一个 React element。
+在日常开发中，为了 _方便_，大部分开发者都会使用一种新的语法"JSX"。
+
+创建一个 React element，用 JSX 语法来实现，如下：
+
+```jsx
+return (
+    <div></div>
+)
+```
+
+### Component 的 props 怎样使用？
+
+举个栗子：
+
+```jsx
+class Board extends React.Component {
+  renderSquare(i) {
+    return <Square length={i} />;
+  }
+}
+```
+
+上面这段代码给 Square Component 设置了一个 _length_ 属性，值为 1。
+在 Square 组件中，我们可以这样来访问 _length_ 这个属性。
+
+```jsx
+class Square extends React.Component {
+  render() {
+    return (
+      <button className="square">
+        {this.props.value}
+      </button>
+    );
+  }
+}
+```
+
+### Component 怎样支持点击等事件？
+
+```jsx
+class Square extends React.Component {
+  render() {
+    return (
+      <button className="square" onClick={function() { alert('click'); }}>
+        {this.props.value}
+      </button>
+    );
+  }
+}
+```
+
+### 小结
+看完上面一些东西，我搞清楚了两个以前非常困惑的问题
+
+1. props 是什么东西
+2. JSX 语法是个啥，为啥 JS 中可以写类似 HTML 的代码
+
+## Component 的状态
+
+以前开发时，经常困惑我的一个问题是：什么时候用 state、什么时候用 props。
+
+React 文档中有这么一句话，让我似乎可以回答这个问题了：
+The parent component can pass the state back down to the children by using props,
+Lifting state into a parent component is common when React components are refactored.
+
+现在好像知道了：Component 之间是有父子关系的，Component 也是有状态的。
+在 React 中，有一种常见的设计模式：就是将子 Component 的状态存在父节点中，
+然后父节点通过设置子节点的 props，控制子节点的状态。
+
+### Determining When to Re-render in React
+这一节暂时还没时间看，之后看心情要不要再学习一下。

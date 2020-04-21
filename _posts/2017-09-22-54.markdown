@@ -1,0 +1,218 @@
+---
+layout: post
+title: "记一次 Python 内存泄漏的排查"
+date: 2017-09-22 09:16:11 +00:00
+permalink: /blogs/54
+tags: [python, memory leak, 内存泄漏]
+categories: [稍微正经点的]
+---
+最近在迁移一个视频服务的断点上传部分。这货之前使用 django 写的，要迁移到一个 tornado 框架。
+
+> 这个 tornado 框架是我司自己撸的，主要解决编写 REST API 的一些问题
+> 这个框架比较有意思，它的名字叫做 poseidon，它集成的一个数据库中间件(?)模块叫做 Zeus，
+> 还有个叫做 Lotan 的  data fetch layer（这个我一直都没太懂，使用干啥的...可能是自己对业务场景了解不够多..）
+
+不过，这三大神可没少给我挖坑...
+
+回到正题，迁移到这个框架之后发现程序有内存泄漏的问题...
+我的内心是崩溃的，我想，python 怎么会有内存泄漏呢，况且我这逻辑这么简单...
+而且年少无知的我从来没碰到过内存泄露的问题呀...
+抱着可以学习新东西的心态...我开始了第一步
+
+## 第一步：本地复现问题
+本地测试一发，确实能稳定复现...
+
+由于上传的逻辑一部分依赖于第三方的一个客户端，本着 _"肯定是其他人的东西有问题，我的东西不会有问题”_ 的心态，
+我机智的把调用第三方库的代码给注释掉了，然而还是有问题
+
+这时候的我，有点慌...难道是自己写的代码有问题？？？（黑人问号）
+贴一段代码在这里已补充上下文
+
+```python
+def put(self):
+    # xxx 一堆逻辑
+    resumable_upload_ctl.upload_part(resumable_upload_obj, self.request.body)  # 调用第三方以及一些数据库逻辑
+    # papapa 又一堆逻辑
+    return self.resume_incomplete_resp()
+```
+
+再后来，我机智的把函数改成什么事情也不干，直接 return...我发现当我往这个接口传文件时，它的内存还是会暴涨..
+
+这就尴尬了，我知道，肯定不知我的问题，是框架的问题。于是我准备探索怎样排查内存泄露的问题...
+
+## 第二步：搜索：python 怎样排查内存泄漏
+开始搜索一些，比如这个
+[Python 内存泄漏调试指导思想](http://jackywu.github.io/articles/python%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E8%B0%83%E8%AF%95%E6%8C%87%E5%AF%BC%E6%80%9D%E6%83%B3/)
+看来看去，这些文章大致分为两类，一部分是介绍 Python 垃圾回收机制；另一部分是介绍公众调试工具的使用。
+有的文章里面还总结了常见的出现内存泄露的情景：
+
+1. C 语言编写的模块出现内存泄漏
+2. 全局对象比如 list/dict 不断增大
+3. 代码内有引用循环，python 垃圾回收机制没办法回收
+
+前两种情况，没什么好说的，对于第三种情况，这里补充一个例子
+
+```python
+a=[]
+b=[]
+a.append(b)
+b.append(a)
+del a
+del b
+print gc.collect()
+```
+
+### python 垃圾回收机制
+
+看来看去，感觉[这篇文章](https://github.com/Hipponensis/Notes/blob/master/%E5%85%B3%E4%BA%8EPython%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6.md)讲的比较好
+大概讲了：python 垃圾回收的三种方式：引用计数(主)；标记-清楚；分代收集；
+
+### 各种调试工具
+
+- Python 标准库 `gc`
+- objgraph
+- pympler
+
+个人最终使用感受：
+
+- 使用 pympler [定位大致问题](https://pythonhosted.org/Pympler/muppy.html#muppy)
+- 使用 objgraph [定位一些细节问题](https://mg.pov.lt/objgraph/)
+
+
+## 第三步：各种照搬和尝试...
+
+重复看文章，重复测试，中间尝试了很多工具和工具的功能
+
+最后发现： `pympler` **帮助我很好的定位问题方向**
+我使用 pympler 查看了各种类型的对象所占用的内存，发现惊天大秘密
+str 类型的数据每次都会涨 1MB，我摸摸脑袋，这不就是我每个上传的分片的 size 嘛
+于是我把分片大小调成 10MB，果然，每次  str 类型的对象所占内存会涨 10MB
+而这个 str 对象就是 `self.request.body` 写过 tornado 的童鞋应该知道这个东东
+
+知道是 request.body 没有释放之后，我就疯狂的看是哪个东西使用 request.body，发现用它的特别少，
+就一个 log 模块用到，当时我心里基本上确认，肯定就是这个坑货，因为这个坑货上次也有个什么 bug...
+于是我就**冲动**的去 clone log 模块的源代码，想找出 bug... 然而太复杂，感觉不是路子..
+
+正在纠结的时候，又很机制的想到：不如**把调用这个模块的地方给注释**了？...
+兴高采烈的去测试了一把，发现并不是这个货的锅...
+
+之后又尝试了一些教程，但都无果
+
+## 第四步：动脑筋
+
+我在想 tornado 会不会也有这个问题呢...测试了一发，发现 tornado 不会有
+于是用我们 poseidon 框架和 tornado 各写了一个最简单的接口，测试，发现我们的有内存泄漏。代码见本文最后。
+
+由于我们的 poseidon 框架是基于 tornado 的，其中 poseidon 主要一个部分就是重载 tornado.web.RequestHandler
+我想是不是 tornado 在某个函数里面把 request.body 给销毁了，但是我们的函数在重载时没有考虑到呢
+于是我详细对比了我们的实现和它的实现，并没有发现问题
+
+## 第五步：还是得靠工具
+
+我想知道到底有哪些模块引用了 request.body
+经过一番探索，使用 `objgraph.show_backref` 和 `objgraph.show_chain` 找到了问题(详见下面的代码）
+有了下面两张图
+
+![ref](http://om9m4m0nt.bkt.gdipper.com/semo_imgs/c5a62a889f7611e7b9eedeb5e997eb50.jpg)
+![chain](http://om9m4m0nt.bkt.gdipper.com/semo_imgs/c9f80c009f7611e7b9eedeb5e997eb50.jpg)
+
+最后，发现问题果然就是在图上所示 `_calculate_uri_prefix` 上，我们框架中有这么一段代码
+
+```
+class ApiBaseHandler(RequestHandler):
+	@functools.lru_cache()
+	def _calculate_uri_prefix(self, xxx):
+		do_sth()
+```
+
+熟悉 functools lru\_cache 的童鞋应该知道，它会把 self 当做缓存 key 的一部分...
+
+好，问题找到
+
+
+--------------------
+
+附调试代码：
+
+```
+import __main__
+import objgraph
+import random
+import weakref
+import sys
+import resource
+from pympler import muppy, summary, tracker
+import gc
+
+import tornado.ioloop
+import tornado.web
+
+from poseidon.app import Application
+from poseidon.api import APIBaseHandler
+from poseidon.authenticators import NoAuthAuthenticator
+
+from werkzeug.datastructures import Range
+
+
+tmp = None
+
+
+class MainHandler(tornado.web.RequestHandler):
+    def put(self):
+        print 't', len(self.request.body)/1024/1024
+        range_obj = Range('bytes', [(0, 10)])
+        self.set_header('Range', range_obj.to_header())
+        return self.set_status(308, reason='Xxx')
+
+
+class Handler(APIBaseHandler):
+    def get(self):
+        objgraph.show_refs([tmp], filename='get.png')
+        objgraph.show_backrefs([tmp], filename='hehe.png')
+        objgraph.show_chain(
+            objgraph.find_backref_chain(
+                objgraph.by_type('HTTPServerRequest')[0],
+                objgraph.is_proper_module
+            ),
+            filename='chain.png'
+        )
+
+        refcount = sys.getrefcount(tmp)
+        print 'tmp id', id(tmp)
+        return self.render_json({'count': refcount})
+
+    def put(self):
+        #objgraph.show_refs([self.request.body], filename='test.png')
+        print 'p', len(self.request.body)/1024/1024
+        range_obj = Range('bytes', [(0, 10)])
+        self.set_header('Range', range_obj.to_header())
+        global tmp
+        tmp = self.request.body
+        print 'body id', id(self.request.body)
+        return self.set_status(308, reason='Xxx')
+
+
+def t_run():
+    app = tornado.web.Application([
+        (r'/upload_session/ddc86c2b9e9d11e7afe39801a79be4bd', MainHandler),
+    ])
+    app.listen(8000)
+    tornado.ioloop.IOLoop.current().start()
+
+
+def p_run():
+    app = Application(
+        handlers=[
+            (r'/', Handler),
+            (r'/upload_session/ddc86c2b9e9d11e7afe39801a79be4bd', Handler),
+        ],
+        authenticator_cls=NoAuthAuthenticator
+    )
+
+    app.listen(8000)
+    tornado.ioloop.IOLoop.current().start()
+
+if __name__ == '__main__':
+    p_run()
+    # t_run()
+```

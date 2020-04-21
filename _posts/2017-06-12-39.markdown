@@ -1,0 +1,173 @@
+---
+layout: post
+title: "mysql 相关的一点基础知识"
+date: 2017-06-12 07:10:49 +00:00
+permalink: /blogs/39
+tags: [mysql]
+categories: [稍微正经点的]
+---
+- [x] MySQL 字段设计基础
+- [x] MySQL 索引基础知识
+- [x] MySQL 锁、事务的一些基础知识
+
+## MySQL 字段设计基础
+
+- 时间推荐用 datetime，bigint 也行。timestamp 和 int 都有范围限制。
+- 尽量不用 text/blob：
+  - `select *` 可能会带来带宽问题，类比 redis `key *`
+  - 如果要用，尽量单表
+- desc 是 mysql 关键字，所以尽量不要用 desc 字段
+
+## MySQL 索引基础知识
+![B+树结构图？](http://tech.meituan.com/img/mysql_index/btree.jpg)
+
+### B/B+ 树与文件系统
+
+- [这里](https://www.kancloud.cn/kancloud/theory-of-mysql-index/41856)说：一般使用磁盘I/O次数评价索引结构的优劣。
+- 但是[这里](http://blog.csdn.net/v_JULY_v/article/details/6530142)说：首先移动臂根据柱面号使磁头移动到所需要的柱面上，这一过程被称为定位或查找 。这部分时间代价最高，最大可达到0.1s左右。
+
+> 貌似两者并不冲突：磁盘读取数据是以盘块(block)为基本单位的。位于同一盘块中的所有数据都能被一次性全部读取出来。**而磁盘IO代价主要花费在查找时间Ts上。** 因此我们应该尽量将相关信息存放在同一盘块，同一磁道中。或者至少放在同一柱面或相邻柱面上，以求在读/写信息时尽量减少磁头来回移动的次数，避免过多的查找时间Ts。
+
+
+### 慢查询优化
+
+- [美团点评技术团队](http://tech.meituan.com/mysql-index.html)
+
+> 有人说（感觉很有道理）：An index is best used when you need to select a small number of rows in comparison to the total rows.
+
+#### 联合索引的意义？
+- "一个顶三个"。建了一个(a,b,c)的复合索引，那么实际等于建了(a),(a,b),(a,b,c)三个索引，因为每多一个索引，都会增加写操作的开销和磁盘空间的开销。对于大量数据的表，这可是不小的开销！
+- 覆盖索引。同样的有复合索引（a,b,c），如果有如下的sql: select a,b,c from table where a=1 and b = 1。那么MySQL可以直接通过遍历索引取得数据，而无需回表，这减少了很多的随机io操作。减少io操作，特别的随机io其实是dba主要的优化策略。所以，在真正的实际应用中，覆盖索引是主要的提升性能的优化手段之一
+- 索引列越多，通过索引筛选出的数据越少。有1000W条数据的表，有如下sql:select * from table where a = 1 and b =2 and c = 3,假设假设每个条件可以筛选出10%的数据，如果只有单值索引，那么通过该索引能筛选出1000W*10%=100w 条数据，然后再回表从100w条数据中找到符合b=2 and c= 3的数据，然后再排序，再分页；如果是复合索引，通过索引筛选出1000w *10% *10% *10%=1w，然后再排序、分页，哪个更高效，一眼便知
+
+### 一些实际的例子
+
+| id | state | created_at |
+|----|:-----:|-----------:|
+| 1  | pending|   122222  |
+
+##### 1. state 子段等于 'pending' 的数据特别少，在 state 上建索引有用么？
+不建议在 state 建索引，区分度小，而索引是顺序扫描下来。
+最好在 created_at 建索引，区分度大，查询快？ **（但是目前不知道为啥）**
+
+##### 2. 如果建了个 (created_at, state) 索引，那下面这个语句能用到索引吗？
+`select * from table where created_at>... and state='';` 这个 state 用不到索引，但是如果建立一个 (state, created_at) 就可以。 -> 最左前缀匹配原则
+
+##### 3. 如果建了个 (..., state, created_at) 的索引，那么这个语句能用索引么？不能？
+`select * from table where state='' and created_at > '';`
+要使用联合索引，where 后的第一个条件必须是索引的第一个字段。
+
+## MySQL 锁机制
+
+问题来源：我用 flask 写了一个定时任务，它会每 5 分钟把数据库的用户数据同步到
+LDAP 服务器。但最近出现了一个问题：新增的用户总是没有同步到 LDAP，当我把
+定时任务重启之后，它能把已有的所有用户给同步过去。但如果之后再新增用户的话，
+它又不会同步新的用户。
+
+结论：在 flask-sqlalchemy 中，默认是关闭 autocommit 的，也就是说，我们在进行
+一个查询操作后，需要手动 commit 事务，否则，下次查询拿到的结果和上次会一样。
+这是 InnoDB 的 Repeatable Read 特性决定的。
+
+### 一些结论
+- 查询的时候是不是一定会加共享锁？不是。
+事务中的普通查询在隔离级别为 SERIALIZABLE 才会给记录加 LOCK_S 锁。
+- InnoDB 会自动给 UPDATE/DELETE/INSERT 加排他锁
+- If autocommit mode is enabled, each SQL statement forms a single
+transaction on its own.
+
+### 一些实验
+
+实验证明：
+1. 验证 Repeatable Read 和排他锁功能
+2. RR 隔离级别下，select 语句不会加共享锁
+
+```sql
+# Create database and table
+create database debug;
+create table `user` (
+    `pk` int(11) not null auto_increment,
+    `name` varchar(40) not null default '';
+    `age` int(11),
+    PRIMARY KEY (`pk`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLECT=utf8_unicode_ci;
+
+# Repeatable Read
+start transaction;  # client A
+insert into user (`name`) values ('a');  # client B
+select * from user;  # Client A, one row
+insert into user (`name`) values ('b');  # client B
+select * from user;  # Client A, only one row
+update user set name='a+' where name='a';  # client B
+select * from user;  # Client A, still one row
+
+# X lock
+update `user` set name='a+a' where name='a';  # Client A
+update `user` set name='a+b' where name='a+';  # Client B, blocked
+# Lock wait timeout exceeded; try restarting transaction
+commit;  # Client A
+```
+
+### 一些附加资料
+
+[参考资料1](https://zhuanlan.zhihu.com/p/29150809)
+[参考资料2](https://tech.meituan.com/innodb-lock.html)
+
+（下面资料都是从别处复制，是一个辅助理解作用，可能会不准确）
+
+将会涉及几组重要概念：
+- 共享锁、排他锁
+- 隔离级别
+- 乐观锁、悲观锁
+
+#### 共享锁和排他锁
+
+- 共享锁（S）：允许一个事务去读一行，阻止其他事务获得相同数据集的排他锁。
+- 排他锁（X）：允许获得排他锁的事务更新数据，阻止其他事务取得相同数据集
+的共享读锁和排他写锁。
+
+#### 隔离级别
+InnoDB 默认使用可重复读。
+
+- 未提交读（READ UNCOMMITTED）。另一个事务修改了数据，但尚未提交，而本事务中的SELECT会读到这些未被提交的数据（脏读）。
+- 提交读（READ COMMITTED）。本事务读取到的是最新的数据（其他事务提交后的）。
+问题是，在同一个事务里，前后两次相同的SELECT会读到不同的结果（不重复读）。
+- 可重复读（REPEATABLE READ）。在同一个事务里，SELECT的结果是事务开始时时间点的状态，
+因此，同样的SELECT操作读到的结果会是一致的。但是，会有幻读现象（稍后解释）。
+- 串行化（SERIALIZABLE）。读操作会隐式获取共享锁，可以保证不同事务间的互斥。
+
+四个级别逐渐增强，每个级别解决一个问题：
+
+- 脏读，最容易理解。另一个事务修改了数据，但尚未提交，而本事务中的 SELECT 会读到这些未被提交的数据。
+- 不重复读。解决了脏读后，会遇到，同一个事务执行过程中，另外一个事务提交了新数据，
+因此本事务先后两次读到的数据结果会不一致。
+- 幻读。解决了不重复读，保证了同一个事务里，查询的结果都是事务开始时的状态（一致性）。
+但是，如果另一个事务同时提交了新数据，本事务再更新时，就会“惊奇的”发现了这些新数据，
+貌似之前读到的数据是“鬼影”一样的幻觉。
+
+幻读：会读到 insert 的数据。在 RR 的隔离级别中，不能解决幻读问题。
+但是 MySQL 等通过 MVCC 配合 RR 解决了幻读的问题。
+
+#### 悲观锁和乐观锁
+MySQL、ORACLE、PostgreSQL等成熟的数据库，出于性能考虑，都是使用了以
+乐观锁为理论基础的 MVCC（多版本并发控制）
+
+悲观锁：在悲观锁的情况下，为了保证事务的隔离性，就需要一致性锁定读。
+读取数据时给加锁，其它事务无法修改这些数据。修改删除数据时也要加锁，
+其它事务无法读取这些数据。
+
+乐观锁，大多是基于数据版本（ Version ）记录机制实现。何谓数据版本？
+即为数据增加一个版本标识，在基于数据库表的版本解决方案中，
+一般是通过为数据库表增加一个 “version” 字段来实现。
+读取出数据时，将此版本号一同读出，之后更新时，对此版本号加一。
+此时，将提交数据的版本数据与数据库表对应记录的当前版本信息进行比对，
+如果提交的数据版本号大于数据库表当前版本号，则予以更新，否则认为是过期数据。
+
+#### 隐式锁定
+InnoDB 在 **事务执行过程中** ，使用两阶段锁协议：
+
+1. 随时都可以执行锁定，InnoDB 会根据 **隔离级别** 在需要的时候自动加锁。
+2. 锁只有在执行 commit 或者 rollback 的时候才会释放，并且所有的锁都是在同一时刻被释放
+
+> [ref](http://mysql.taobao.org/monthly/2016/01/01/)
+> 普通查询在隔离级别为 SERIALIZABLE 会给记录加 LOCK_S 锁。
+> 但这也取决于场景：非事务读（auto-commit）在 SERIALIZABLE 隔离级别下，无需加锁

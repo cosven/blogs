@@ -1,0 +1,205 @@
+---
+layout: post
+title: "How collections.deque works?"
+date: 2019-04-23 14:02:11 +00:00
+permalink: /blogs/94
+tags: [python, linked list, LRUCache]
+categories: [稍微正经点的]
+---
+前言：在 Python 生态中，我们经常使用 collections.deque
+来实现栈、队列这些只需要进行头尾操作的数据结构，它的 append/pop
+操作都是 O(1) 时间复杂度。list 的 pop(0) 的时间复杂度是 O(n)，
+在这个场景中，它的效率没有 deque 高。那 deque 内部是怎样实现的呢？
+我从 GitHub 上挖出了 CPython collections 模块的第二个 commit 的源码。
+
+## dequeobject 对象定义
+
+注释写得优雅了，无法进行更加精简的总结。
+
+```c
+/* The block length may be set to any number over 1.  Larger numbers
+ * reduce the number of calls to the memory allocator but take more
+ * memory.  Ideally, BLOCKLEN should be set with an eye to the
+ * length of a cache line.
+ */
+
+#define BLOCKLEN 62
+#define CENTER ((BLOCKLEN - 1) / 2)
+
+/* A `dequeobject` is composed of a doubly-linked list of `block` nodes.
+ * This list is not circular (the leftmost block has leftlink==NULL,
+ * and the rightmost block has rightlink==NULL).  A deque d's first
+ * element is at d.leftblock[leftindex] and its last element is at
+ * d.rightblock[rightindex]; note that, unlike as for Python slice
+ * indices, these indices are inclusive on both ends.  By being inclusive
+ * on both ends, algorithms for left and right operations become
+ * symmetrical which simplifies the design.
+ *
+ * The list of blocks is never empty, so d.leftblock and d.rightblock
+ * are never equal to NULL.
+ *
+ * The indices, d.leftindex and d.rightindex are always in the range
+ *     0 <= index < BLOCKLEN.
+ * Their exact relationship is:
+ *     (d.leftindex + d.len - 1) % BLOCKLEN == d.rightindex.
+ *
+ * Empty deques have d.len == 0; d.leftblock==d.rightblock;
+ * d.leftindex == CENTER+1; and d.rightindex == CENTER.
+ * Checking for d.len == 0 is the intended way to see whether d is empty.
+ *
+ * Whenever d.leftblock == d.rightblock,
+ *     d.leftindex + d.len - 1 == d.rightindex.
+ *
+ * However, when d.leftblock != d.rightblock, d.leftindex and d.rightindex
+ * become indices into distinct blocks and either may be larger than the
+ * other.
+ */
+
+typedef struct BLOCK {
+	struct BLOCK *leftlink;
+	struct BLOCK *rightlink;
+	PyObject *data[BLOCKLEN];
+} block;
+
+typedef struct {
+	PyObject_HEAD
+	block *leftblock;
+	block *rightblock;
+	int leftindex;	/* in range(BLOCKLEN) */
+	int rightindex;	/* in range(BLOCKLEN) */
+	int len;
+	long state;	/* incremented whenever the indices move */
+	PyObject *weakreflist; /* List of weak references */
+} dequeobject;
+```
+
+下面是我为 Block 结构体画的一个图
+
+```python
+Block:
+                +----------------------------------------+
+                |          data: 62 objects              |
+ +----------+   |                                        |   +-----------+
+ | leftlink |---|  | ... | Obj1 | Obj2 | Obj3 | ... |    |---| rightlink |
+ +----------+   |           30     31     32             |   +-----------+
+                +----------------------------------------+
+```
+
+## 创建一个 block
+
+```c
+static block *
+newblock(block *leftlink, block *rightlink, int len) {
+	block *b;
+	/* To prevent len from overflowing INT_MAX on 64-bit machines, we
+	 * refuse to allocate new blocks if the current len is dangerously
+	 * close.  There is some extra margin to prevent spurious arithmetic
+	 * overflows at various places.  The following check ensures that
+	 * the blocks allocated to the deque, in the worst case, can only
+	 * have INT_MAX-2 entries in total.
+	 */
+	if (len >= INT_MAX - 2*BLOCKLEN) {
+		PyErr_SetString(PyExc_OverflowError,
+				"cannot add more blocks to the deque");
+		return NULL;
+	}
+	b = PyMem_Malloc(sizeof(block));
+	if (b == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	b->leftlink = leftlink;
+	b->rightlink = rightlink;
+	return b;
+}
+```
+
+## 创建一个 dequeobject
+
+1. 创建一个 block
+2. 实例化一个 dequeobject Python 对象（这一块的内在逻辑目前我也不太懂）
+3. leftblock 和 rightblock 指针都指向这个 block
+4. leftindex 是 CENTER+1，rightindex 是 CENTER
+5. 初始化其他一些属性， len state 等
+
+这个第一步和第四步都有点意思，第一步创建一个 block，也就是说，
+deque 对象创建的时候，就**预先分配**了一块内存。第四步隐约告诉我们，
+当元素来的时候，它先会被放在中间，然后逐渐往头和尾散开。
+
+```c
+static PyObject *
+deque_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+	dequeobject *deque;
+	block *b;
+
+	if (type == &deque_type && !_PyArg_NoKeywords("deque()", kwds))
+		return NULL;
+
+	/* create dequeobject structure */
+	deque = (dequeobject *)type->tp_alloc(type, 0);
+	if (deque == NULL)
+		return NULL;
+
+	b = newblock(NULL, NULL, 0);
+	if (b == NULL) {
+		Py_DECREF(deque);
+		return NULL;
+	}
+
+	assert(BLOCKLEN >= 2);
+	deque->leftblock = b;
+	deque->rightblock = b;
+	deque->leftindex = CENTER + 1;
+	deque->rightindex = CENTER;
+	deque->len = 0;
+	deque->state = 0;
+	deque->weakreflist = NULL;
+
+	return (PyObject *)deque;
+}
+```
+
+## deque.append 实现
+
+步骤：
+
+1. 如果 rightblock 可以容纳更多的元素，则放在 rightblock 中
+2. 如果不能，就新建一个 block，然后更新若干指针，将元素放在更新后的 rightblock 中
+
+```c
+static PyObject *
+deque_append(dequeobject *deque, PyObject *item)
+{
+	deque->state++;
+	if (deque->rightindex == BLOCKLEN-1) {
+		block *b = newblock(deque->rightblock, NULL, deque->len);
+		if (b == NULL)
+			return NULL;
+		assert(deque->rightblock->rightlink == NULL);
+		deque->rightblock->rightlink = b;
+		deque->rightblock = b;
+		deque->rightindex = -1;
+	}
+	Py_INCREF(item);
+	deque->len++;
+	deque->rightindex++;
+	deque->rightblock->data[deque->rightindex] = item;
+	Py_RETURN_NONE;
+}
+```
+
+看了 append 实现后，我们可以自行脑补一下 pop 和 popleft 的实现。
+
+
+## 小结
+
+**deque 内部将一组内存块组织成双向链表的形式**，每个内存块可以看成一个 Python 对象的数组，
+这个数组与普通数据不同，它是从数组中部往头尾两边填充数据，而平常所见数组大都是从头往后。
+得益于 deque 这样的结构，它的 pop/popleft/append/appendleft 四种操作的时间复杂度均是 O(1),
+用它来实现队列、栈数据结构会非常方便和高效。但也正因为这样的设计，
+它不能像数组那样通过 index 来访问、移除元素。**链表 + 数组、或者链表 + 字典
+这样的设计在实践中有很广泛的应用**，比如 LRUCache, LFUCache，有兴趣的同鞋可以继续探索。
+
+- PS1: LRUCache 在面试中不要太常见。
+- PS2: 出 LFUCache 题的面试官都是变态。

@@ -1,0 +1,51 @@
+---
+layout: post
+title: "一个 PyQt 软件的重构笔记（feeluown）"
+date: 2018-04-23 02:43:39 +00:00
+permalink: /blogs/67
+tags: [feeluown, refactor, 重构]
+categories: [稍微正经点的]
+---
+很多问题以前也遇到过，不用小本本记下来，下次还可能会遇到。
+ 
+1. 不要直接操作 UI。修改数据，让 UI 随着数据变动（参考 QT Model-View 模式）（似不似和 React 那个啥有点像）
+2. 将音乐资源方封装成 Model，不需要暴露资源方的 API 细节（不要分太多层）
+3. 同一个资源不要分 BriefXxxModel 和 XxxModel 两种（Keep it simple, stupid.）
+4. 一次修改不要涉及太多，非主要逻辑可以使用 TODO/FIXME 等标记
+5. Component ui 操作逻辑逐步内敛，将逻辑从外往内收
+6.  闭包在 signal/slot 机制中不要太好用，在 callback 多的程序中应该也会挺好用的。
+所以 Javascript 应该会大量使用这个东西 :thinking_face:？好像也没听说有啥隐患。
+7. 从 Qt 的 Model/View/Delegate 中想到《重构》书上讲的 `以委托取代继承` 和 `以继承取代委托`
+8. 想要保护变量或者名字空间时，不仅仅可以用 `__` 标记变量为私有变量，还可以考虑使用 `class Meta`
+9. 如果不能完全抽象一个东西，那就具体化，不要搞个四不像
+10. 所有项目都最应该有个配置模块
+
+
+一些感想
+
+1. 之前的 widgets 部分设计得太失败了，简直反人类。当年为什么提了个这样的 [Commit](https://github.com/cosven/FeelUOwn/commit/90113d6b35516665e2671d9cd07f87fc12faf166)
+2. 好的（可读的）代码是不是只要满足两个条件：模块间没有重复代码；模块内保持简洁。
+3. 以前对 non-blocking 这种概念不了解，所以我的 feeluown 遇到网络卡就死掉了...
+Qt 是真厉害，啥都有...
+4. Qt 的长宽计算功能感觉有点弱（或者说复杂），要能像 HTML 那样自动对齐、自动填充就好了
+
+-------------------------------------------
+
+### 2019-09-28 耗时的 IO 操作和缓存怎样良好结合放在一起？
+
+```python
+def get():
+    if fetched:
+        return obj
+    obj = fetch_obj()  # IO -> HTTP request
+    return obj
+```
+
+第一种方案，是让调用方将 `get` 函数放到一个线程池中运行。但是这种方案有个问题，当 obj 已经被 fetch 的话，其实这个操作就没必要放在线程池中了。
+
+第二种，将 `if fetched` 这个逻辑交给调用方，这样就可以在合适的时候使用线程池。但是这样也有一个问题，会让系统变得更加复杂，感觉是把 `get` 函数的细节暴露给了外部。
+
+### 2018-07-01 播放列表加一个“移除”的功能
+
+1. 多写一个 Widget，在这个 widget 上加上移除功能 --- 很想这么做，但是后来觉悟了
+2. 给 Model 加上 delete/update 操作 --- 这才是正解，符合 model/view/delegate 模式

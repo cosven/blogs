@@ -1,0 +1,80 @@
+---
+layout: post
+title: "每周阅读 2019-08-05 ~ 2019-08-11"
+date: 2019-08-09 11:27:10 +00:00
+permalink: /blogs/98
+tags: [reading, weekly]
+categories: [稍微正经点的]
+---
+最近工作很苦，不过博主健在！?
+
+
+### Python 相关
+
+#### 一个 Python markdown parser 项目
+
+推荐阅读项目代码 <https://github.com/lepture/mistune>
+
+1. 代码结构简单，只有一个文件，大概 1.2k 行，可读性比较好
+2. 可以了解怎样解析 markdown（了解之后，就可以放飞自己了，比如自己做一些 markdown 语法定制，做个 cosven-flavoured markdown 啥的，也不在话下 ?）
+
+### Golang 相关
+
+#### golang 项目目录结构
+
+<https://github.com/golang-standards/project-layout>
+
+golang 项目目录结构标准，讲了常见的 pkg/cmd/configs 等目录的作用。
+
+#### Godoc: documenting Go code
+
+文章没啥技术含量，[链接](https://blog.golang.org/godoc-documenting-go-code)。
+
+文章简单讲了 go 的函数文档该怎么写，还说 godoc 借鉴了 Python docstring 和 Javadoc 的文档设计，但是比它们更简单。
+
+有个有趣的点是：godoc 没有机制给函数函数加注释，所以问题来了？到底有没有必要给函数参数加注释呢？
+
+#### Error handling and Go
+
+自己最近写了 1k 行左右 go 代码，但是感觉 Go 代码里面到处都需要处理 error，自己写了许多重复代码，于是想看看相关资料，有没有办法避免。
+
+<https://blog.golang.org/error-handling-and-go>
+
+- 设计上，go 的 `Error()` 方法应该负责把上下文信息都附带进来
+- `fmt.Errorf` 可以方面的 new 一个 error，常用在函数返回上
+- 对于需要重复频繁处理 error 的情形，博客中说可以自己定义一个 Error 类，然后函数返回这个 Error，在一个地方做统一处理。比如 HTTP handler 的话，就是加个 err handler。
+
+### Emacs 相关
+
+#### Snails 超级快的模糊搜索框架
+
+看到 Snails 的截图，马上就想到了前几天在知乎上看到的另外一篇文章：[VSCode 的精华只在于一个快捷键](https://zhuanlan.zhihu.com/p/76794861)。Snails 作者说了，这个框架很好扩展！30 行可以撸一个 backend，值得一试。
+
+描述链接：https://emacs-china.org/t/snails/10029
+个人对 Snails 的期待与看法：https://emacs-china.org/t/snails/10029/178?u=cosven
+
+#### elisp 文件中的 lexical-binding 是个啥？
+
+https://kuanyui.github.io/2016/02/24/dynamic-scoping-and-lexical-scoping/
+
+这个文章解释的比较清楚。看完个人的理解就是：lexical-scoping 使得 elisp 具备了闭包功能。
+这里面似乎有点蹊跷，又搜了搜 lexical-scoping 和 dynamic scoping 的一些问题：
+[动态作用域和词法域的区别是什么？ - Guannan Wei的回答 - 知乎](https://www.zhihu.com/question/20032419/answer/49183240)
+
+### 闲杂
+
+#### 在 Docker 中访问 https 地址遇到 X509 Error
+
+https://blog.cloud66.com/x509-error-when-using-https-inside-a-docker-container/
+
+
+#### The magic behind configure, make, make install
+https://thoughtbot.com/blog/the-magic-behind-configure-make-make-install
+
+带新人了解 configure/make 背后做的事情，比如 Makefile.in configure.ac 都是些啥。
+
+### 测试相关
+#### SQLsmith: Randomized SQL Testing in CockroachDB
+<https://www.cockroachlabs.com/blog/sqlsmith-randomized-sql-testing/>
+
+个人小结：它帮助发现了若干 bug，是一个新颖且有效的方式。坏消息是：这些 bug 大部分都是些 corner case，价值还值得商榷。但 cockroach labs 仍然在探索它的其他价值。

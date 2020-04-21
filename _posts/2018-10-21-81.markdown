@@ -1,0 +1,279 @@
+---
+layout: post
+title: "写一个简单的解释器 - 简介以及词法分析"
+date: 2018-10-21 19:03:39 +00:00
+permalink: /blogs/81
+tags: [python, interpreter, lexical analysis, 词法分析, 解释器, lexer]
+categories: [稍微正经点的]
+---
+编程语言一直是民间讨论的热点话题之一，国庆的时候自己按照教程做了一个简陋版的“解释器”，
+这里记录一下自己学习的心路历程。
+
+参考的学习资料主要是这个系列教程：[Let’s Build A Simple Interpreter](https://ruslanspivak.com/lsbasi-part1/)
+
+在看到这个教程之前，我也有想过自己实现一个解释器/编译器，但是那时不知道从哪里开始，
+毫无头绪。而实际上，我面临的第一个问题就是：什么是解释器，解释器和编译器的区别是什么？
+
+## 解释器和编译器
+
+解释器定义：
+> In computer science, an **`interpreter`** is a computer program that directly executes,
+> i.e. performs, instructions written in a programming or scripting language,
+> without requiring them previously to have been compiled into a machine language program.
+
+编译器定义：
+> A **`compiler`** is computer software that transforms computer code written in
+> one programming language (the source language) into
+> another programming language (the target language).
+
+> The name compiler is primarily used for programs that translate source code
+> from a high-level programming language to
+> a lower level language (e.g., assembly language, object code, or machine code) to
+> create an executable program.
+
+简单总结：两者本身都是一个计算机程序，解释器侧重直接 **执行** 指令、代码，
+而常说的编译器则侧重将源代码 **转换** 成 **机器码**。
+
+## 实现一个简单的加减计算器
+
+问题一：编写一个解释器，解析执行 `m+n`（其中 m,n 都是 10 以内的自然数）
+
+时间暂停，读者可以脑补一下自己会怎么实现。
+
+我这里有一个解法：
+```python
+text = input('> ')
+
+def interprete(code):
+    try:
+        m = int(text[0])
+        plus = text[1]
+        n = int(text[2])
+    except Exception:
+        raise Exception('Syntax error.')
+    return m + n
+
+print(interprete(text))
+```
+
+方法非常的简单，分两步：
+1. 先解析程序代码：先读取第一个字符，记为为数字 m，读取第二个字符，
+记为加号，读取第三个字符，记为数字 n
+2. 执行解析结果：计算 m+n。
+
+附加题：
+
+- 如果用户输入的 m+n 中间有一个或者多个空格怎么办？
+- 如果 m,n 可能会大于 10 怎么办？
+- 如果要求支持 m - n 呢？
+
+一个解法：
+
+```python
+from collections import namedtuple
+
+Token = namedtuple('Token', ('type_', 'value'))
+
+# Token types
+INTERGER, OPERATOR, WHITESPACE, EOF = 'INTERGER', 'OPERATOR', 'WHITESPACE', 'EOF'
+
+
+class Lexer:
+    """Calculator lexer: m +/- n, m and n are natural number.
+
+    lexer: also known as scanner or tokenzier.
+    """
+    def __init__(self, text):
+        self.pos = 0
+        self.text = text
+
+    def eat_interger(self):
+        while self.pos < len(self.text) and self.text[self.pos].isdigit():
+            self.pos += 1
+
+    def eat_space(self):
+        while self.pos < len(self.text) and self.text[self.pos].isspace():
+            self.pos += 1
+
+    def get_tokens(self):
+        while self.pos < len(self.text):
+            c = self.text[self.pos]
+            if c.isdigit():
+                start_pos = self.pos
+                self.eat_interger()
+                end_pos = self.pos
+                yield Token(INTERGER, self.text[start_pos: end_pos])
+                self.pos += 1
+                continue
+            elif c.isspace():  # ignore
+                self.pos += 1
+                continue
+            elif c in ('+', '-'):
+                yield Token(OPERATOR, c)
+                self.pos += 1
+                continue
+        yield Token(EOF, None)
+
+
+def parse(tokens):
+    """Simple parser: m +/- n
+    """
+    m = next(tokens)
+    op = next(tokens)
+    n = next(tokens)
+    if op.value == '+':
+        return int(m) + int(n)
+    else:
+        return int(m) - int(n)
+
+
+tokens = Lexer('12 + 103').get_tokens()
+print(parse(tokens))
+
+# Output: 115
+```
+
+好像也不难，对不对？这个简单的解释器程序可以分为两个步骤：
+
+1. 将字符串逐字解析成一串标记符 (Token)
+2. 按照加减法的语法规则解析这一串标记符并执行
+
+其中，我们称第一步为 `词法分析 (lexical analysis)`，
+进行词法分析的工具叫做 `词法分析器 (lexer)`。
+第二步称为 `语法分析 (syntactic analysis, or parsing)`，
+进行语法分析的工具叫做 `语法分析器 (parser)`。
+下面我们对第一步进行更深层次的研究学习，第二步在之后的笔记中进行详细分析。
+
+## 词法分析
+
+概念也很重要啦，再贴一下：
+> 词法分析（英语：lexical analysis）是计算机科学中将字符序列转换为标记（token）序列的过程。
+
+在上面的例子中，我们将字符串 `12 + 103` 分解成了 4 个 Token 供语法分析器使用：
+
+| 12         | +    | 103  |      |
+| ---------- | ---- | ---  | --   |
+| 数字       | 符号 | 数字 | 结束 |
+
+这些标记符是有类型的，另外还有一个值。
+
+**时间暂停**，下图是一个 Emacs 编辑器，猜猜它的哪个技术用到了词法分析？
+![editor syntax highlight](http://om9m4m0nt.bkt.gdipper.com/semo_imgs/7908eea2d56411e8a688deb5e997eb50.jpeg)
+
+答案：语法高亮：先识别字符类型，然后给它上个色，是不是很简单。
+想让自己的编辑器颜色丰富起来？赶紧往下面看，2333
+
+但是话说，实现一个这么简单的词法分析器就有这么多 if...else，是不是有的过分了？
+如果要实现一个真正的解释器，这条件判断得写多长？有没有什么更优雅的方式呢？
+
+### 词法分析器的实现
+
+从上面的加减法解释器示例，我们也可以看出，词法分析的方法其实很简单：**逐个字符的对字符串进行解析，
+根据一个标记符的首字符来判断标记符的类型，接着根据类型来解析这个标记符的起点和结尾。**
+循环往复即可解析出整个标记序列。
+
+但是使用 `isdigit` + `eat_interger`, `isspace` `eat_whitespce`
+这些方法来识别标记符的类型、开始结束位置，总感觉有点傻傻的。
+如果有个更多 Token 类型，字符串、变量、函数名、关键字等，那这个词法分析器的代码是不是就难看了。
+
+**时间暂停**，所以大家想想有没有什么更好的方法呢？
+
+答案是：正则表达式，这是个实践中真正在用的方法。
+
+一个示例：
+
+```python
+import re
+from collections import namedtuple
+
+
+Token = namedtuple('Token', ('type_', 'value'))
+
+# Token types
+INTERGER, OPERATOR, WHITESPACE, EOF = 'INTERGER', 'OPERATOR', 'WHITESPACE', 'EOF'
+PLUS, MINUS, MUL, DIV = 'PLUS', 'MINUS', 'MUL', 'DIV'
+LPAREN, RPAREN = 'LPAREN', 'RPAREN'
+
+
+class Lexer:
+    """
+    支持解析加减乘除、括号、数字、空格、换行
+    """
+    regexes = [
+        (INTERGER, r'\d+'),
+        (MINUS, r'-'),
+        (PLUS, r'\+'),
+        (MUL, r'\*'),
+        (DIV, r'/'),
+        (WHITESPACE, r'[^\S\n]+'),
+        (LPAREN, r'\('),
+        (RPAREN, r'\)'),
+    ]
+
+    def __init__(self, text):
+        self.text = text
+
+        self.pos = 0
+
+        #: current char
+        self.cc = self.text[self.pos]
+
+    def error(self, msg='lexer: Syntax Error.'):
+        raise Exception(msg)
+
+    def get_tokens(self):
+        """Tokenizer
+        """
+        _tokens_func = []
+        for type_, regex in self.regexes:
+            _tokens_func.append((type_, re.compile(regex).match))
+
+        while 1:
+            for type_, rexmatch in _tokens_func:
+                m = rexmatch(self.text, self.pos)
+                if m:
+                    self.pos = m.end()
+                    value = m.group()
+                    if type_ == INTERGER:
+                        value = int(value)
+                    elif type_ == WHITESPACE:
+                        break
+                    yield Token(type_, value)
+
+                    break
+            else:
+                if self.pos == len(self.text):
+                    break
+                else:
+                    self.error()
+        yield Token(EOF, None)
+
+
+for token in Lexer('(1 + 2) * 5').get_tokens():
+    print(token)
+
+
+### Ouput:
+
+# Token(type_='LPAREN', value='(')
+# Token(type_='INTERGER', value=1)
+# Token(type_='PLUS', value='+')
+# Token(type_='INTERGER', value=2)
+# Token(type_='RPAREN', value=')')
+# Token(type_='MUL', value='*')
+# Token(type_='INTERGER', value=5)
+# Token(type_='EOF', value=None)
+```
+
+[pygments](http://pygments.org/) 是一个 Python 语法高亮库，里面有各种语言的词法分析器，有兴趣的童鞋可以去研究研究。
+
+## 小结
+
+本问简单描述了解释器和编译器的区别，以一个简单的加减法解释器示例出发，
+介绍了一些基本概念（如 Token, Lexer），并对词法分析这一部分做了比较详细的叙述。
+
+读完之后，我们应该知道：
+
+1. 编译器和解释器的主要区别？
+2. 解释器主要是由那两部分组成？
+3. 怎样实现一个词法分析器？

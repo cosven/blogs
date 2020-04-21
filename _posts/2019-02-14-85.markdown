@@ -1,0 +1,244 @@
+---
+layout: post
+title: "小白扯淡－用 GDB 调试卡住的 Python 进程"
+date: 2019-02-14 10:08:40 +00:00
+permalink: /blogs/85
+tags: [python, debug, gdb]
+---
+某一天，我发现线上的一个进程不打日志了，我觉得很奇怪，
+于是用 strace 命令(Linux 下) 看了写这个进程在干吗，结果发现：
+它停在一个 read 系统调用上，我从下午 6 点开始盯着它，到晚上 9
+点，它一直都没有动静，于是我确定，它卡住了（hang 主了，这个说法或许更专业一点）
+
+
+```sh
+$ sudo strace -p 9755
+Process 9755 attached
+read(5,
+```
+
+既然卡住了，我就想着用 GDB attach 看看 backtrace 呐。
+
+Google 搜索一下文档，官方有一个用 GDB 调试 Python 的教程，
+https://wiki.python.org/moin/DebuggingWithGdb .
+这个教程有个 Prerequisites, 它要求我们安装 python-debuginfo 包，
+然后就可以在 gdb 里面使用 **py-bt, py-locals** 等各种**超级好用**的命令，
+看起来画面特别美。
+
+（想当年）：我以前碰到 Python 进程卡住时，只知道一个方法：重启，后来有老师告诉我可以用 GDB。
+
+我们线上用的是 centos7，所以我运行了这个命令
+
+```sh
+sudo yum install gdb python-debuginfo
+```
+
+成功了。我心里特别开心啊。在上家公司的时候，我们是自己打了个 python 的包，
+但是当时没有打 debug 包，所以当时我们就算用 GDB 调试，也没有办法用 py-bt 等命令
+（应该是这样的因果关系）。于是我跑了下
+
+```sh
+sudo gdb /opt/python/bin/python 9755
+```
+然后屏幕上出现很多类似这样的信息
+
+```
+warning: the debug information found in "/usr/lib/debug//opt/python/bin/python2.7.debug" does not match "/opt/python/bin/python" (CRC mismatch).
+```
+心里有点慌，不过我还是勇敢的输入了 `py-bt` 命令，然后 GDB 果断的提示：命令找不到。
+
+.......“唉，不行啊，没有 py-bt 命令怎么 debug”，然后我就开始了各种谷歌。
+我尝试了下面几种思路：
+
+1. CRC mismatch 这个错误能不能绕过？
+2. 我是不是装错 debuginfo 包了？
+3. Python 虚拟环境会不会造成 CRC mismatch 呀？
+4. 据说只要有 python-gdb.py 就可以了？
+5. ...
+
+没有一种是可行的 =。＝ 心痛（浪费了差不多一天
+
+不过在搜索上面几个问题的时候，我有一个发现：几乎所有的 GDB Python 教程都会教我用
+py-bt 命令。再次心痛一下。所以这里面大部分教程对我来说，都没啥太大的用处。不过其中有一个教程，
+https://www.podoliaka.org/2016/04/10/debugging-cpython-gdb/ ,对我有很大的启发。
+
+文章里面说：
+
+TL;DR 我们可以用 PyObject* 来进行类型转换，将 CPU 寄存器上的内存地址指向的对象
+尝试转换为 PyObject 对象，并读取这个对象的类型。如果这个对象类型是 PyFrameObject,
+那么我们就可以拿到很多信息。ps: [PyFrameObject](https://github.com/python/cpython/blob/master/Include/frameobject.h#L17)
+就是 Python 的栈帧，里面存了很多信息。
+
+> On x86-64 machines the obvious place to check is CPU registers:
+> there are 16 general purpose CPU registers, that compilers can use for
+> storing the values of function call arguments and local variables.
+
+> Note, that some of the numbers above clearly look like memory addresses.
+> We can ask gdb to interpret the value of a CPU register as a pointer to some data type.
+> We know, that most of CPython runtime data structures are PyObject's,
+> that store information on the actual type internally
+> (e.g. ->ob_type->tp_name field contains a type name encoded as a C-string).
+
+> So what we'll do is try to cast the value of each CPU register to PyObject*
+> and see if we can find anything useful:
+
+对我 debug 来说，PyFrameObject 比较有用的几个信息：
+
+- f_code (PyCodeObject)
+   - PyCodeObject 可以拿到文件名(co_filename),
+   - 还可以拿到 co_varnames(局部变量名字元组)
+- f_lineno 代码所在的行数
+
+于是，参考这个文章的方法：
+
+第一步：输入 bt 命令，gdb 会显示很多函数调用 frame, 我的目标是找到 PyEval_EvalFrameEx 字样,
+在我的场景中，第 18 个符合我的目标。
+
+```sh
+(gdb) bt
+...
+#18 0x00000000004a8d70 in PyEval_EvalFrameEx ()
+...
+```
+
+第二步：up 命令：设置第 18 个 frame 为当前 frame
+
+```sh
+(gdb) up 18
+#18 0x00000000004a8d70 in PyEval_EvalFrameEx ()
+```
+
+第三步：查看 CPU 寄存器保存的内存地址
+
+```sh
+(gdb) info registers
+rax            0xfffffffffffffe00       -512
+rbx            0x2      2
+rcx            0xffffffffffffffff       -1
+rdx            0x5      5
+rsi            0x375af53        58044243
+rdi            0x5      5
+rbp            0x37680b0        0x37680b0
+rsp            0x7fff736f4ba0   0x7fff736f4ba0
+r8             0x3      3
+r9             0x1      1
+r10            0x0      0
+r11            0x293    659
+r12            0x20a90a0        34246816
+r13            0x21f1e4e        35593806
+r14            0x2      2
+r15            0xffffffff       4294967295
+rip            0x4a8d70 0x4a8d70 <PyEval_EvalFrameEx+21504>
+eflags         0x293    [ CF AF SF IF ]
+cs             0x33     51
+ss             0x2b     43
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+```
+
+第四步：测试内存地址指向的是不是 PyFrameObject
+
+```
+(gdb) p ((PyObject*) 0x375af53)->ob_type->tp_name
+Cannot access memory at address 0xfffffffffffffe06 # 这里的错误提示可能各种各样
+(gdb) p ((PyObject*) 0x37680b0)->ob_type->tp_name
+$28 = 0x5555557472ef "frame"
+```
+
+第五步：找到对应的 Py 源文件和对应的行
+
+```sh
+(gdb) x/s ((PyStringObject *)((PyCodeObject *)((PyFrameObject *) 0x37680b0)->f_code)->co_filename)->ob_sval
+...  # 这里会显示文件名
+
+(gdb) p ((PyFrameObject *) $arg0)->f_lineno
+...  # 这里会显示行
+```
+
+根据文件、行信息，我们可以找到对应的函数。
+
+第六步：查看函数里面局部变量的值。
+
+```
+# 获取有几个局部变量
+(gdb) p ((PyCodeObject *)((PyFrameObject *) 0x37680b0)->f_code)->co_nlocals
+
+# 获取第一个局部变量名字
+(gdb) x/s ((PyStringObject*)((PyTupleObject*)((PyCodeObject *)((PyFrameObject *) 0x37680b0)->f_code)->co_varnames)[0])->ob_sval
+...
+# 获取第二个局部变量名字
+(gdb) x/s ((PyStringObject*)((PyTupleObject*)((PyCodeObject *)((PyFrameObject *) 0x37680b0)->f_code)->co_varnames)[1])->ob_sval
+...
+
+```
+
+获取第一个局部变量的内存地址（错误但或许有参考意义的演示）。
+我实验发现按照下面的方法，获取到的值并不是第一个局部变量的值，
+也有可能根本获取不到值！！！
+
+```sh
+# 获取到这个变量的内存地址，gdb 会把结果保存
+# 在这里，gdb 把它保存在 $30 这个变量中
+(gdb) p ((PyObject *)((PyFrameObject *) 0x37680b0)->f_localsplus)[0]
+$30 = ...
+
+# 看这个内存地址中的对象类型是什么
+(gdb) p ((PyObject*) $30)->ob_type->tp_name
+...
+
+# 如果是 int,我们可以这样取值
+(gdb) p ((PyIntObject*) $30)->ob_ival
+
+# 如果是字符串，我们可以这样取值
+(gdb) x/s ((PyStringObject*) $30)->ob_sval
+```
+
+我自己在实验的时候，通过这个部分，获取到了几个非常有用的变量的值，
+帮助我（在自己脑海中） YY 了进程为什么卡住 =。＝ 心累，写不下去了。
+
+
+----------------------------------
+
+分割线，上面都是为了让自己以后能大概回忆整个过程记录的。下面是一些有用的资料：
+
+1. 受这篇博客启发：https://www.podoliaka.org/2016/04/10/debugging-cpython-gdb/
+2. gdb 基本命令
+  - up/down/frame 命令使用方法：https://sourceware.org/gdb/onlinedocs/gdb/Selection.html
+  - x/s 等命令：http://visualgdb.com/gdbreference/commands/x
+3. gdb macro 的一些简单例子
+  - https://www.cs.usfca.edu/~benson/cs326/pintos/bin/gdb-macros
+  - http://code.activestate.com/lists/python-list/168824/
+4. 怎样从获取 Python 局部变量，受这个启发：https://github.com/python/cpython/blob/master/Tools/gdb/libpython.py#L872
+5. Python 源码：了解 Python 各个对象 struct 定义
+5. debug 过程特别繁琐，我整理了一个 gdb macro 用来判断一个内存地址指向的是否
+是 PyFrameObject，如果是，则显示文件名、行、局部变量名，局部变量值的内存地址等信息
+
+```gdb
+define findf
+  set $lineno = (long *)((PyFrameObject *) $arg0)->f_lineno
+  if $lineno != 0
+    printf "Find a PyFrameObject.\n"
+    printf "---------------------\n"
+    set $filename = ((PyStringObject *)((PyCodeObject *)((PyFrameObject *) $arg0)->f_code)->co_filename)->ob_sval
+    printf "File: +%d %s\n", $lineno, $filename
+    printf "---------------------\n"
+    set $nlocals = ((PyCodeObject *)((PyFrameObject *) $arg0)->f_code)->co_nlocals
+    printf "Local variables number: %d\n", $nlocals
+
+    set $i = 0
+    while $i < $nlocals
+      printf "%d\t", $i
+      x/s ((PyStringObject*)((PyTupleObject*)((PyCodeObject *)((PyFrameObject *) $arg0)->f_code)->co_varnames)[$i])->ob_sval
+
+      # 这个名字和值并没有对应起来
+      p ((PyObject *)((PyFrameObject *) $arg0)->f_localsplus)[$i]
+      Printf "-------\n"
+      set $i = $i+1
+    end
+  end
+end
+```
+
+使用方法 `findf 内存地址`

@@ -1,0 +1,68 @@
+---
+layout: post
+title: "命令行工具历险记？"
+date: 2017-08-24 09:12:48 +00:00
+permalink: /blogs/50
+tags: [瞎折腾]
+---
+最近更新：2018-09-07
+
+个人目前的解决方案 <http://github.com/cosven/rcfiles> ：
+
+1. bash
+2. iterm2(macOS)/tilix(Ubuntu)/konsole(Kubuntu)
+3. tmux
+4. Emacs -> 项目编写
+5. Vim -> 脚本编写
+
+## Terminal emulator
+
+记录几个看起来比较惊艳的...
+
+- [Hyper](https://github.com/zeit/hyper) 基于 webkit，社区开起来不错。目前就是不太稳定，性能也不太好。
+- [black screen](https://github.com/vshatskyi/black-screen) 也是基于 web 的。它的命令行和原来的不太一样了，比如它的自动补全的 UI 是 GUI 形式的，而不是文字版的。
+- Cathode 收费软件，忽略
+- Tilix 和 Termite 没图片，不评价，但感觉不适合 osx
+- [Alacritty](https://github.com/jwilm/alacritty) 据说是性能最好了。有 GUI 加速，个人比较青睐。
+
+**2018-09-07 更新**：这么多年了，对于 terminal emulator 的选择，自己得出一个结论。
+**macOS 就选 iterm2，GTK 桌面选 Tilix，KDE 桌面的选 Konsole**。
+
+## Shell (2018-09-07 添加)
+尝试过 bash/zsh/fish，最后选择了 bash。
+
+- 一开始，随大流，用了 zsh + oh-my-zsh，感觉很棒
+- 后来听说了 fish shell，很棒，尤其是它的 auto-suggestion 功能。
+用过 fish 之后，就会感觉 auto-jump 什么的都是浮云，于是放弃了 oh-my-zsh
+- 最后选择了 bash，主要是因为日常工作中会需要写一些 bash 脚本
+
+现在，我非常讨厌 oh-my-zsh/bash-it/fisher 等 shell 框架，它们都很复杂。
+复杂的框架有个共同的毛病，当它们出现 bug 时，我基本找不到问题起源。
+
+## 编辑器
+
+- [micro](https://github.com/zyedidia/micro) 看起来是给不喜欢折腾的人用的，但是在命令行里面就可以用。
+
+**2018-09-07 更新**：目前，自己选择的编辑器是 Emacs（Daemon 模式） + 少量 vim（简单脚本编辑）。
+
+## 知名网站的 CLI 替代品
+
+- haxor-news: `hn`，看 hacker-news
+- reddit terminal viewer: `rtv`，看 reddit
+- task warrior: `task`，管理 TODO
+- howdoi: `howdoi`，查看 command 常见用法
+- lolcat: `lolcat` 输出着色
+- bropages: `bro` command line examples
+
+**2018-09-07 更新**：个人感觉网页版靠谱。这些工具或多或少试用过一小段时间，
+但是之后都基本而不用了，比如自己会经常看网页版的 hacker-news 和 reddit，
+而不会选择用命令行版本。
+
+## 惊艳的命令行工具
+
+- mapscii: `mapscii` 命令行中的世界地图
+
+## 惊艳的命令行库
+
+- [drawille](https://github.com/asciimoo/drawille) 可以在命令行里面画出一个立方体...
+  它利用了 [Braille](http://en.wikipedia.org/wiki/Braille) 这个东西...

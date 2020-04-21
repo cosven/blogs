@@ -1,0 +1,54 @@
+---
+layout: post
+title: "试用 KDE - 扯淡篇"
+date: 2018-07-16 17:56:05 +00:00
+permalink: /blogs/72
+tags: [linux, kde, gnome, desktop environment]
+---
+今天北京下雨，温度比前两天低了不少，不过我的笔记本好像丝毫没有受
+到天气影响，手一放在键盘上，就有种暖暖的感觉。
+
+打开 htop 一看，今天排在第一行的不是 slack，也不是 chromium。
+gnome-shell CPU 45%，突破天际的 CPU 消耗。
+
+之前看了一篇博客，说是 KDE 占用资源较少，可定制化程度也比较高，
+当时心里有点痒痒的，如今 GNOME 还这么不争气，遂决定装个 KDE 试试。
+
+我之前使用的是 Ubuntu 18.04 Gnome 发行版，在此基础上安装 KDE 桌面比较简单，
+直接安装 `plasma-desktop` 包、注销，然后选择 plasma 登录就可以进入
+KDE 桌面环境了。
+
+刚从 GNOME 切换进入 KDE 时，界面看起来会特别奇怪，需要进入系统设置
+手动配置一下 Application Style，
+把 Widget  Style 设置也设置一下，另外还需要单独给 GTK 应用单独设置一个风格，
+为了方便，我把它们都设置为 breeze ，设置完主题相关的东西后，注销，重新登录进入，
+界面基本就 OK 了。长得还不错～
+
+接着，就是各种折腾了，主要是测试一下常用的软件能不能正常工作，然后有这么一些
+体会。KDE 带来了不少好处：
+
+1.  它真的比 GNOME 流畅不少！非常开心
+2.  fcitx 和 KDE 搭配更好；而 fcitx 在 GNOME 下经常错位
+3.  原生支持 media indicator 等
+4.  界面看起来也不错
+5.  打字的感觉比 GNOME 下舒服很多（不知道为啥）
+
+不过，也遇到几个小问题：
+
+1.  KDE 一开始好像不支持 emoji？参考 [教程](https://victor.kropp.name/blog/emoji-on-linux/) 解决了
+2.  它不支持 Emacs Style Input，比较痛苦，好像只能忍一忍
+3.  它对 GTK 程序支持不是很好，GTK 程序在 KDE 下非常难看。
+    - 于是用 konsole 替换了 tilix
+    - 用 dolphin 替换了 gnome-files
+    - 用 okular 替换了 Document viewer 等。
+4. 很多快捷键和 GNOME 都有差别，需要重新熟悉
+
+总体来说，感觉还是挺不错的，值得尝试。
+
+-----------------------
+
+不知道是不是因为 GNOME/slack/chromium 真的很卡，
+最近自己非常厌恶 Electron 家族的东西，总感觉它们会损害我的电脑...
+我想用 pidgin 来代替 slack，用终端浏览器来代替 chromium，但是都失败了，意料之中吧。
+
+最后不得不说的是：其实我并不懂 KDE 与 plasma desktop 是什么关系，大概是同一个东西？

@@ -1,0 +1,47 @@
+---
+layout: post
+title: "使用 Redis 的一些记录"
+date: 2017-03-24 08:44:24 +00:00
+permalink: /blogs/22
+tags: [notes, redis, 笔记]
+---
+### 几个问题
+
+1. redis 有没有 master/slave 这种关系？
+2. redis 连接是不是一定要用连接池？
+3. 形如 `redis://127.0.0.1:6379/1` 最后这个 1 有什么用吗？随便一个数字？
+4. 代码里面一般怎样使用 redis？
+
+#### 代码里面一般怎样使用 redis？
+ 
+#### redis 中 hget vs get
+
+`hget(key, field, value)` 其实这东西应该按照字面意思去理解。想一下一个对象 `user`，它有姓名，年龄等这时候，你可以这样子
+
+```
+hset user1 name xiaoming
+hset user1 age 23
+hset user2 name xiaofang
+hset user2 age 34
+```
+
+你也可以这样写
+
+```
+set user1 '{"name": "xiaoming", "age": 34}'
+```
+
+前者比较适合读单个子段。后者比较适合每次读这个信息。   
+前者有几个硬伤：
+
+1. key 不能设置 TTL
+2. 不能做 sharding
+ 
+#### redis 连接是不是最好用连接池？
+#### strict_redis 是啥？
+
+看起来只是 redis-py 的一个概念。
+
+> strict_redis: In addition to the changes above, the Redis class, a subclass of StrictRedis,
+overrides several other commands to provide backwards compatibility with older
+versions of redis-py

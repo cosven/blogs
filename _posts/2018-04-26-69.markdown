@@ -1,0 +1,77 @@
+---
+layout: post
+title: "磨磨生锈的脑袋（持续更新）"
+date: 2018-04-26 15:35:58 +00:00
+permalink: /blogs/69
+tags: [leetcode, data structure, algorithm]
+categories: [工具啥的]
+---
+有些东西，说有用有用，说没用也没用
+ 
+- [x] Python 程序执行原理？ [知乎上的答案](https://www.zhihu.com/question/30296617/answer/112564303)
+- [ ] 反射，泛型等概率？
+- [ ] 死锁，临界区，临界资源，竞态条件？
+- [ ] 乐观锁是啥？
+- [ ] hashmap 和 hashtable 区别？set 和 list 的区别，x in l/s O(1) 和 O(n)?
+- [ ] Python GIL？
+- [ ] 红黑树？
+- [ ] 系统负载 load idle 等指标怎么看？
+- [ ] MySQL 索引原理简介？
+- [ ] 手撸简单的带锁的多线程？
+- [ ] 手撸 LRU 之类的东东？
+
+是这样的，毕业的时候没刷算法题，现在终究还是要刷的...这就是所谓人生典型案例吧
+
+#### 子树判断
+
+[leetcode ref](https://leetcode.com/problems/subtree-of-another-tree/) 竟然是 O(m\*n) 的时间复杂度，最无脑的方法？所以说嘛，不尝试，你咋知道不会成功。   
+画个图：（graphviz 是真的好用）。代码：[gist](https://gist.github.com/cosven/18ac358916b1b53a1bc9b26c18ddc4fc)
+![subtree-vis](http://om9m4m0nt.bkt.gdipper.com/semo_imgs/ac2855e249c911e8a688deb5e997eb50.jpe)
+
+#### Serialize and Deserialize Binary Tree
+考察二叉树遍历算法实现 -> 递归和非递归 [个人解答，多个解法](https://github.com/cosven/pat_play/blob/master/lintcode/7.py)
+
+另外有一个感悟：二叉树的前序遍历结果是可以重新构造出二叉树。    
+二叉树的前序遍历结果反序列化时的递归感觉一下子想不到...2333，大概是对二叉树的遍历不够熟悉吧。
+
+
+今天（18-05-08）在想一个问题，为啥有的人打死也不刷算法题目呢？谁能给我一个优雅的解释。
+
+#### letter-combinations-of-a-phone-number
+这到题像是让我使用程序实现排列组合的逻辑。看起来像是考察程序员的基本逻辑思维？  [017.py](https://github.com/cosven/pat_play/blob/master/leetcode/017.py)
+啊哈，好像没可能其它到什么时间复杂度低的惊人的解法。
+
+#### Rotate Image
+选了个比较有实际应用场景的题来做，看似非常简单，但从开始动手写，到最后 A 也用了个把小时。
+
+做完这个题的感受就是：唉，现在脑子转得特别慢，一些边界条件考虑起来特别头疼。   
+写一些数学方程式都特别费劲，感觉日后得注意数学思维培养，不然脑子是不是会越来越迟钝。
+
+#### Unique Binary Search Trees
+这是一个数学题，就是找 f(n) 和 f(n-1) 的关系。做这个题花了一个小时左右吧，一开始，
+我以为最后结果是一个关于 n 的表达式。所以我想手动计算 f(4) 看看有没有什么规律，
+但计算 f(4) 也花了不少时间，最后还计算错了。
+
+中间，我也想了用类似邻接矩阵的东西来计算，失败告终。
+
+接着我就想着：把第 n 个节点挂在第 1...n-1 个节点上，只有两种可能，一种往右上放，一种往
+右下方。想着想着，后来就想到了最后答案的解法。 
+$$f(n)=f(0)f(n-1)+..+f(n-1-m)f(m)+...+f(n-1)f(0)$$
+
+做完之后看了下，好像大家基本都是这种方法。
+[个人解答](https://github.com/cosven/pat_play/blob/master/leetcode/096.py)
+
+做完的时候，想了想能不能用上尾递归等技巧？好像在参数里面传个数组好像就可以了。
+
+
+#### LFU Cache
+诶，还以为很容易呢，结果发现并不能答对。
+
+get 为 $O(1)$ 并不难，set 为 $O(nlogn)$ 也不难，但是 set 要写成 $O(1)$ 貌似不容易。
+
+个人的思路：set 要写成 $O(1)$ 的话，就不能有查找操作，然后写着写着就想到了链表，
+接着用双向链表 + 一个常量貌似确实可以实现 $O(1)$，但是有些 case 貌似没能考虑到，
+总有些 wrong answer。心痛。由于代码已经处于无法维护的状态了，我觉得可能是我的
+思路有问题... 找个答案看看吧。
+
+- 个人对双向链表没有啥经验

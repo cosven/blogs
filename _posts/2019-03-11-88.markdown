@@ -1,0 +1,236 @@
+---
+layout: post
+title: "揭开 asyncio 的神秘面纱 - 协程就是生成器？"
+date: 2019-03-11 11:55:14 +00:00
+permalink: /blogs/88
+tags: [python, asyncio]
+categories: [稍微正经点的]
+---
+在第一篇文章『揭开 asyncio 的神秘面纱 - 从 hello world 说起』中，
+我们提出一个问题：Python 协程和生成器行为非常类似，它们究竟是什么关系？
+在这篇文章中，我们就来探索、解决这个疑问。
+
+万事先 Google 一下：python coroutine generator. 我们可以搜到这个
+[PEP 342 -- Coroutines via Enhanced Generators][pep342]，
+看这个 PEP 的状态已经是 Final 了，说明官方已经接受了这个提议，
+十有八九，Python 默认的协程就是基于 _增强的生成器_ 来实现的。
+继续浏览 Google 搜索结果，我们还可以看到一些 coroutine 相关的资料，
+比如：[PEP 492 -- Coroutines with async and await syntax][pep492].
+
+这篇文章，我们就以这两个 PEP 为参考资料，学习了解协程与生成器的联系与区别。
+
+## 喵一眼 PEP 492 : 不止有 async/await 语法
+
+我们喵一眼 PEP 492，可以发现，async/await 语法是在 Python 3.5 版本加入的（包含 3.5）。
+而在 3.4 的时候，asyncio 就已经可以正常工作了，也就是说，3.4 版本也提供了一种方式来声明协程：
+
+```python
+>>> @asyncio.coroutine
+... def hello_world():
+...     yield
+...     print('hello world')
+...
+>>> g_coro = hello_world()
+>>> g_coro.send(None)  # 启动生成器/协程
+>>> g_coro.send(None)  # 恢复生成器
+hello world
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+从这个写法，我们就很容易看出，以前的协程就是在生成器函数上套了个 `asyncio.coroutine`的装饰器。
+
+这种使用装饰器定义的协程叫做: `generator based coroutine`。
+而使用 async/await 关键字定义的协程叫做 `native coroutine`，这是新的也是更好的写法。
+这两种写法定义出来的协程本质是一样的，只是叫法不一样。它们底层都是基于生成器来实现。
+
+注：在 Python web 开发中，我们经常会提到另外一个异步编程框架 gevent，gevent
+的中协程是基于 greenlet 实现，greenlet 底层不是基于生成器的。在后续的文章中，
+我们也会讲 greenlet 和 generator 在实现层面的差异。
+
+## 阅读 PEP 342
+
+在读 PEP 342 之前，我们简单了解下 PEP。
+
+PEP，全名 Python Enhancement Proposal，当开发者想往 Python 添加大的新特性之前，
+开发者需要写一个 PEP 来详细的介绍这个特性。一个 PEP 往往包含这几个部分：
+
+1. 特性简介（Abstract/Introduction）
+2. 为什么要添加这个新特性（Motivation）
+3. 基本理论（Rationale）
+4. 新特性的一些细节（Specification）
+5. ...
+
+下面，我们就来阅读 PEP 342 的动机部分
+
+它先描述了协程常见的一个使用场景
+
+> Coroutines are a natural way of expressing many algorithms,
+> such as simulations, games, asynchronous I/O, and other forms
+> of event-driven programming or co-operative multitasking.
+
+接着说 Python 的生成器功能已经很接近协程（言下之意是功能上还差点）
+
+> Python's generator functions are almost coroutines -- but not quite
+
+然后讲了现在的生成器功能差在哪里
+
+> in that they allow pausing execution to produce a value,
+> but do not provide for values or exceptions to be passed in when execution resumes.
+> They also do not allow execution to be paused within the try portion of try/finally blocks,
+> and therefore make it difficult for an aborted coroutine to clean up after itself.
+
+1. 现在的生成器虽然可以在暂停执行时吐出一个值，但是恢复生成器时，我们不能传入参数。
+（言下之意是恢复协程时，应该需要支持传入参数）
+2. 现在的生成器不支持在 try block 中暂停（言下之意是协程应该要支持在 try block 中暂停）
+
+读完这段文字，相信我们自己可以回答这么两个问题：
+
+1. 了解为什么 Python 的协程会基于生成器实现？
+2. 实现协程前，需要对生成器作什么改进？
+
+说了这么多次协程，但是我们似乎还没有说过一个最基本的概念：什么是协程？
+
+## 什么是协程？
+
+coroutine 的定义有很多，Python 文档是这么写的：
+> Coroutines is a more generalized form of subroutines. Subroutines are entered at one point
+> and exited at another point. Coroutines can be entered, exited, and resumed at many different points.
+
+而 Unity 文档是这么写的：
+> A coroutine is a function that can suspend its execution (yield) until the given YieldInstruction finishes.
+
+解读一下这两个定义：
+
+一个协程是一个函数/子程序（可以认为函数和子程序是指一个东西）。这个函数可以暂停执行，
+把执行权让给 YieldInstruction，等 YieldInstruction 执行完成后，这个函数可以继续执行。
+这个函数可以多次这样的暂停与继续。
+
+注：这里的 YieldInstruction, 我们其实也可以简单理解为函数。
+
+下面，我们就来看一些例子，来帮助我们理解这个概念。
+
+### 像普通函数一样
+
+协程可以像普通函数一样，一个协程调用另外一个协程并等待它返回。
+
+```python
+>>> import asyncio
+>>>
+>>> async def hello_world():
+...     print('hello world')
+...
+>>> async def job1():
+...     print('job1 started...')
+...     print('job1 paused')
+...     await hello_world()
+...     print('job1 resumed')
+...     print('job1 finished')
+...
+>>> loop = asyncio.get_event_loop()
+>>> loop.run_until_complete(job1())
+job1 started...
+job1 paused
+hello world
+job1 resumed
+job1 finished
+```
+
+job1 调用 hello_world 并等待它返回。
+
+### 比普通函数厉害
+
+协程可以在“卡住”的时候可以干其它事情。
+
+```python
+>>> async def long_task():
+...     print('long task started')
+...     await asyncio.sleep(1)
+...     print('long task finished')
+...
+>>> loop.create_task(long_task())
+<Task pending coro=<long_task() running at <stdin>:1>>
+>>> loop.create_task(job1())                                                                                                                                                                                                                            >>>>> loop.create_task(job1())
+<Task pending coro=<job1() running at <stdin>:1>>
+>>>
+>>> try:
+...     loop.run_forever()
+... except KeyboardInterrupt:
+...     pass
+...
+long task started
+job1 started...
+job1 paused
+hello world
+job1 resumed
+job1 finished
+long task finished
+^C>>>
+```
+
+从这段程序的输出可以看出，程序本来是在执行 long task 协程，但由于 long task
+要 await sleep 1 秒，于是 long task **自动**暂停了，hello_world 协程自动开始执行，
+hello world 执行完之后，long task 继续执行。
+
+### 生成器的暂停与恢复
+
+协程可以暂停和恢复，生成器当然就也可以。下面来看一个生成器暂停、恢复的例子：
+
+```
+>>> def gen():
+...     print('generator started')
+...     print('generator paused')
+...     yield
+...     print('generator resumed')
+...     print('generator paused, again')
+...     yield
+...     print('generator resumed')
+...     print('generator finished')
+...
+
+>>> def main():
+...     g = gen()
+...     print('generator created')
+...     print('-----------------')
+...     g.send(None)  # start generator
+...     print('-----------------')
+...     g.send(None)  # resume generator
+...     print('-----------------')
+...     g.send(None)  # resume generator
+...
+>>> main()
+generator created
+-----------------
+generator started
+generator paused
+-----------------
+generator resumed
+generator paused, again
+-----------------
+generator resumed
+generator finished
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 9, in main
+StopIteration
+```
+
+## 小结
+
+在这篇文章中，我们以两个 PEP 为主要参考资料，了解到协程有两种定义的方法，
+其中使用生成器形式定义的协程叫做 `generator-based coroutine`, 通过 async/await
+声明的协程叫做 `native coroutine`，两者底层实现都是生成器。接着，
+我们阐述了协程的概念，从概念和例子出发，讲了协程和生成器最主要的特征：可以暂停执行和恢复执行。
+
+至于标题中的问题：协程就是生成器？我想我们或许可以这样回答：
+coroutine is not geneartor but coroutine equals to (enhanced) generator.
+
+话说看完本问，你有木有好奇：为了实现协程，生成器作了哪些增强呢？这个问题留给读者哈 ~
+阅读 PEP 342 即可找到答案。
+
+下篇文章，我们来探讨 Python 生成器的实现原理。
+
+[pep255]: https://www.python.org/dev/peps/pep-0255/
+[pep342]: https://www.python.org/dev/peps/pep-0342/
+[pep492]: https://www.python.org/dev/peps/pep-0492/

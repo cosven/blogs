@@ -1,0 +1,86 @@
+---
+layout: post
+title: "学习 Kubernetes 第三天 - Kubernetes API 学习"
+date: 2018-09-12 04:03:30 +00:00
+permalink: /blogs/78
+tags: [k8s, kubernetes]
+---
+学习总结：这一节主要介绍了 Kubernetes API 的一些常见概念，以及这些概念之间的关系，
+比如 group, resources，collections。接着简单介绍了 watch 功能，叙述了 Kubernetes
+怎样处理大块的数据返回（其实就是分页）。总体来说比较简单。
+
+## Kubernetes API Overview
+
+> The REST API is the fundamental fabric of Kubernetes.
+>
+> 1. API versioning
+> 2. API groups
+>    - core(legacy) group: `/api/v1`
+>    - named groups: `/apis/$GROUP_NAME/$VERSION=`
+> 3. Enabling API groups
+> 4. Enabling resources in the groups
+
+简单讲了 Kubernetes API 的一些规则和能力
+
+- API 有版本
+- 可以分 group，方便扩展（提示：Group 是有版本的）
+- group 可以 enable 和 disable
+- group 中的 resources 也可以 enable 和 disable
+- 需要注意 group 和 resources 的区别
+
+## Kubernetes API Conceptd
+
+### Standard API terminology
+
+> Kubernetes generally leverages standard RESTful terminology to describe the API concepts:
+>
+> - A **resource type** is the name used in the URL (`pods`, `namespaces`, `services`)
+> - All resource types have a concrete representation in JSON (their object schema)
+> which is called a **kind**
+> - A list of instances of a resource type is known as a **collection**
+> - A single instance of the resource type is called a **resource**
+
+Kubernetes API 常见的一些术语，以及它们的概念
+
+> - a namespace is a cluster-scoped resource type
+> - All resource types are either scoped by the cluster (`/apis/GROUP/VERSION/*`)
+> or to a namespace (`/apis/GROUP/VERSION/namespaces/NAMESPACE/*`).
+> - Some resource types will have one or more sub-resources
+
+这些概念之间的一些关系
+
+### Efficient detection of changes
+
+> To enable clients to build a model of the current state of a cluster,
+> all Kubernetes object resource types are required to support
+> consistent lists and an incremental change notification feed called a **watch**.
+>
+> Every Kubernetes object has a `resourceVersion`.
+>
+> 传一个 resourceVersion 给 apiserver，apiserver 会返回这个版本之后的所有变化信息。
+> A given Kubernetes server will only preserve a historical list of changes for a limited time.
+
+### Retrieving large results sets in chunks
+
+> To retrieve a single list in chunks, two new parameters `limit` and `continue`
+> are supported on collection requests and a new field `continue` is returned
+> from all list operations in the list `metadata` field.
+
+continue 是一个 token，它有可能会失效，默认 5 分钟失效。
+
+### Receiving resources as Tables
+apiserver 支持按照 table 形式输出数据，返回结果中会有 Column Title 等东西。
+
+### Alternate representations of resources
+默认使用 JSON，支持 protobuf。
+
+## Client Libraries
+忽略
+
+## Kubernetes Deprecation Policy
+忽略
+
+## Accessing the API
+介绍很多 API 认证方式，先忽略
+
+## CLI 以及 API Reference

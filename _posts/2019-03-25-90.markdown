@@ -1,0 +1,318 @@
+---
+layout: post
+title: "揭开 asyncio 的神秘面纱 - 生成器原理"
+date: 2019-03-25 09:10:28 +00:00
+permalink: /blogs/90
+tags: [python3, asyncio, generator]
+categories: [稍微正经点的]
+---
+前面文章有说道『协程和生成器最主要的特征：可以暂停执行和恢复执行』，
+它另外一个隐含的意思：普通函数不能暂停和恢复执行。
+
+我们来看一个调用普通函数的例子：
+
+```python
+def a():
+    print('hello, a')
+
+def main():
+    print('before call a')
+    a()
+    print('after call a')
+
+main()
+
+# output:
+
+before call a
+hello, a
+after call a
+```
+
+可以发现，我们在 main 函数中调用 a 函数，main 函数会等 a 执行完毕直到它返回，
+然后接着执行 main 函数后面的逻辑。
+
+如果调用生成器函数：
+
+```python
+def gen():
+    print('hello, before first yield')
+    yield
+    print('hello, before second yield')
+    yield
+    print('hello, gen finished')
+
+def main():
+    print('before call a')
+    g = gen()
+    print('after call a')
+    print('start a')
+    g.send(None)  # 启动生成器
+    print('resume a')
+    g.send(None)
+
+main()
+
+# output:
+
+before call a
+after call a
+start a
+hello, before first yield
+resume a
+hello, before second yield
+```
+
+可以发现，调用 `gen()` 生成器函数之后，main 函数并没有等待它执行完毕，
+它是立即返回的，在后面，我们通过 `g.send` 方法启动生成器，
+然后它会执行到 yield 的地方，然后暂停。我们在 main 函数再次调用 `g.send`
+方法恢复生成器，gen 又会执行到下一个 yield 的地方。也就是说，
+我们可以在 main 函数中控制 gen 生成器的暂停恢复。普通函数 a 则不能。
+
+现象看到了，我们接着分析现象背后的本质：Python 是怎样实现函数调用的？
+
+看到这个问题，如果读者计算机基础扎实的话，可能马上就能给出一个答案或者能想到一些线索。
+而对于没有学过计算机基础课程、或者上课在划水的同鞋，大家（我们）
+之前可能根本没有想过这个问题，也不觉得这算是个问题。
+就像住在地球上的我们，平时也不会去思考这个问题：地球是怎样实现自转的呢？
+
+## C 怎样实现函数调用？
+
+在探索 Python 是如何实现函数调用之前，我们先看看 C 语言是怎样实现的。
+假设我们有这样一段代码：
+
+```c
+int p(){
+    return 1;
+}
+int main(int argc, char* argv[]){
+    int n = 1;
+    p();
+    return n;
+}
+```
+
+C 语言将每个函数运行时所需要的数据保存在**运行时栈**中。在这个例子中，
+
+- 当执行 main 函数的代码时，系统会创建一个栈帧，
+- 把 main 函数所需要的数据（比如局部变量 n）圧入这个栈帧中
+- 准备调用函数 p 之前，先把返回地址圧入栈中，接着创建一个新的栈帧用来执行函数 p
+- 执行完 p 函数，程序会把 p 相关的数据从栈里面弹出
+- 接着弹出返回地址，让程序继续从返回地址往后执行
+
+光看文字有点抽象，这里有个图：
+
+![c-stack-frame](https://user-images.githubusercontent.com/4962134/54884134-458f4400-4ea8-11e9-8d8d-c1ef100d8353.png)\
+
+这个图较清晰的表示了：C 运行时栈的结构。我自己以前没有学习过操作系统这块相关的知识（或者也可能是我上课划水去了），
+某一天我搜到这个的时候，看着还挺懵的：比如图中的 +4/%esp/%ebp 都是啥意思？当时我都不知道，
+
+不过感觉这些细节也不妨碍我理解这个函数调用过程，我是这样脑补的：
+C 语言有一个栈，当执行一个函数时，函数相关数据被圧进栈，当函数执行完，相关数据出栈。
+比如：函数 main 调用 a, 函数 a 调用 b。那这个栈里面就是 [main, a, b]。
+当 b 执行完，栈里面就是 [main, a]。当 a 和 main 都执行完，栈就空了，程序就退出了。
+
+在这种情况下，有没有可能让函数 b 执行到一半，然后暂停呢？ummm, 好像不行啊，栈就是先进后出。
+
+**那如果我有另外一块内存中可以把 b 存起来，想执行的时候就把它压到栈中，暂停的时候把它从栈里拿出去。
+这样是不是就可以实现：暂停、恢复这个函数了？ummm, 好像是可以，但我们先不管这个。**
+
+我们回到我们本来的问题：Python 是怎样实现函数调用的？
+
+（ps: 突然发现这样表述有点问题，应该把问题改成 CPython 是怎样实现函数调用的，不过这样也不影响我理解这个原理。）
+
+## CPython 是怎样实现函数调用的？
+
+以前看到有文章说 Python 解释器可以看成一个基于栈的虚拟机（stack based virtual machine），
+当时不懂为啥这么说，不懂的地方有两点：
+
+1. 基于栈是啥意思？言外之意就是可以基于其它东西的喽？
+2. 为啥说 Python 解释器是个虚拟机？我印象中的虚拟机是 VMWare/Virtual Box 这些东西。
+
+但当我看完 C 语言函数调用栈之后，我似乎有点明白：
+
+对于 C 语言代码，它通过编译器编译、链接等步骤生成指令，交给机器来执行。
+代码执行的时候，机器会用在内存上开辟一块内存（栈）来保存一些运行时的信息。
+
+而对于 Python 代码，它是由解释器来执行的，从这个角度看，CPython 解释器就是个虚拟的机器（虚拟机）。
+而在执行代码的时候，CPython 可能也是用栈这种数据结构来实现函数调用等，
+所以它就被叫作 stack-based。ummm，根据非常的科学。我觉得自己非常的机智。
+
+后来读了更多的书、看了更多的资料，发现确实，上面这样理解基本是对的。在 CPython 中，
+它有个结构体叫做 [`PyFrameObject`][pyframeobject]，对应的还有个叫作
+`PyEval_EvalFrameEx` 的函数，它是用来执行一个 frame。
+PyFrameObject 基本是对标 C 栈帧，它大概长这个样子：
+
+```c
+typedef struct _frame {
+    PyObject_VAR_HEAD
+    struct _frame *f_back;      /* previous frame, or NULL */
+    PyCodeObject *f_code;       /* code segment */
+    ...
+    int f_lasti;                /* Last instruction if called */
+    ...
+    PyObject *f_localsplus[1];  /* locals+stack, dynamically sized */
+} PyFrameObject;
+
+```
+
+- `f_back` 指向前一个 frame
+- `f_code` 存了代码对象（脑补一下：多少和我们写的 Python 代码有点关系）
+- `f_lasti` 上一个执行过的字节码指令（Python 不是要先编译成字节码么，挺合理的）
+- `f_localsplus[1]` 是个啥，忽略
+
+我们看一段简单的 Python 代码：
+
+```python
+import inspect
+
+def p():
+    n = 1
+    frame = inspect.currentframe()
+    print('p 函数所在栈帧\t', id(frame))
+    print('栈帧上的局部变量\t', list(frame.f_locals.keys()))
+    print('上一个栈帧\t', id(frame.f_back))
+
+def main():
+    print('main 函数栈帧\t', id(inspect.currentframe()))
+    p()
+
+if __name__ == '__main__':
+    main()
+
+
+# output:
+
+main 函数栈帧    4307710024
+p 函数所在栈帧   4307665928
+栈帧上的局部变量         ['n', 'frame']
+上一个栈帧       4307710024
+```
+
+综合以上信息，这个 PyFrameObject 与 C 的栈帧确实很像：
+
+1. 每个 frame 对象有个指针 `f_back` 指向之前那个函数的 frame，这样就形成一个栈的结构
+2. frame 也保存了局部变量等信息。
+3. 当函数执行完，frame 对象就再也找不到了
+
+给这个过程画个图（图来自一本[非常好的书][aosabook]）
+
+![python-function-calls](https://user-images.githubusercontent.com/4962134/54906261-dce2ae80-4f1d-11e9-8353-2e1a15f83ddd.png)
+
+## 探索生成器函数的执行
+
+看完了函数调用的例子，来看个生成器的例子：
+
+```python
+import inspect
+
+def gf():
+    frame = inspect.currentframe()
+    print('生成器所在的栈帧', id(frame))
+    print('上一个栈帧', id(frame.f_back))
+    yield
+
+def main():
+    print('main 函数栈帧', id(inspect.currentframe()))
+    g = gf()
+    g.send(None)
+
+if __name__ == '__main__':
+    main()
+
+
+# output:
+main 函数栈帧 4562411592
+生成器所在的栈帧 4562367496
+上一个栈帧 4562411592
+```
+
+看起来也没啥特殊的。但我们可以研究一下 g 这个生成器对象，可以发现
+g 对象有个属性，叫做 `gi_frame`, 这是个啥，我很好奇 =.=。
+于是我修改一下 main 函数代码，把这个对象的 id 打印出来。
+
+```
+def main():
+    print('main 函数栈帧', id(inspect.currentframe()))
+    g = gf()
+    g.send(None)
+    print(id(g.gi_frame))
+
+
+# output:
+
+main 函数栈帧 4459384904
+生成器所在的栈帧 4459340808
+上一个栈帧 4459384904
+4459340808
+```
+
+**发现它和生成器函数所在的栈帧是同一个！** 这和一般函数非常的不一样，
+普通函数执行完，它的栈帧也就没了，但生成器函数就不一样：我们调用生成器函数，
+它返回一个生成器对象给我们，并在这个对象上附上生成器函数的栈帧对象。
+**有了函数的栈帧对象，也就是说，我们可以随时控制这个函数的执行与暂停啦！**
+
+实际上，我们也确实可以通过 send 函数来恢复生成器的运行。我们可以看一眼 CPython
+是怎样实现 send 函数的：[ref](https://github.com/python/cpython/blob/master/Objects/genobject.c#L153)
+
+```c
+static PyObject *
+gen_send_ex(PyGenObject *gen, PyObject *arg, int exc, int closing)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyFrameObject *f = gen->gi_frame;
+    PyObject *result;
+
+    ...  // 很多条件判断：比如判断生成器是否正在运行；是否已经执行完了等
+
+    // 将触发生成器执行的函数的栈帧保存起来，设置为生成器函数栈帧的上一个
+    // 这样子，当生成器执行完或者暂停的时候，就能回到原来的函数。
+    //
+    // 另外，值得注意的是，生成器的 f_back 不一定要指向创建生成器的函数帧，
+    // 它指向的是触发它运行的那个函数的帧
+    f->f_back = tstate->frame;
+
+    // blabla, 给生成器设置一些状态
+    gen->gi_running = 1;
+    gen->gi_exc_state.previous_item = tstate->exc_info;
+    tstate->exc_info = &gen->gi_exc_state;
+
+    // 运行这个生成器的代码
+    result = PyEval_EvalFrameEx(f, exc);
+
+    // 记录运行过程中发生的异常，设置状态，blabla
+    tstate->exc_info = gen->gi_exc_state.previous_item;
+    gen->gi_exc_state.previous_item = NULL;
+    gen->gi_running = 0;
+
+    ... // 很多清理动作
+
+    return result;
+}
+```
+
+再画个图（这个是我 P 的）
+
+![python-generator-function-call](https://user-images.githubusercontent.com/4962134/54905200-5fb63a00-4f1b-11e9-859a-c5f330f97a14.png)
+
+
+## 小结
+
+CPython 解释器是一个 stack based virtual machine, 它通过 PyFrameObject 模拟了
+C 语言运行时栈帧，PyFrameObject 之间通过 f_back 指针连接，形成了一个类似栈的数据结构，
+最终效果也就类似 C 运行时栈了。
+
+函数调用的基础就是这个栈，而普通函数调用遵守栈的先进后出，调用者先进栈，
+被调用者后入栈，被调用者执行完出栈，控制权通过 f_back 指针回到调用者，
+普通函数的 frame 对象随着调用结束也就没了，我们基本无法进行太多控制。
+
+生成器函数则不一样，它的帧对象游离与这个规则之外，附在生成器对象上面。
+在一个普通函数中，只要能拿到生成器对象，调用 send 方法，就能将生成器函数帧的 f_back 设置为自己、
+并触发生成器运行，生成器执行完或者暂停时，控制权回到调用函数。
+
+
+下篇文章：我们会简单总结前面的知识，开始探索 asyncio 中另外一个重要的概念：event loop
+
+
+[pyframeobject]: https://docs.python.org/3/c-api/veryhigh.html#c.PyFrameObject
+[aosabook]: http://www.aosabook.org/en/500L/a-web-crawler-with-asyncio-coroutines.html

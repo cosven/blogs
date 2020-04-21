@@ -1,0 +1,47 @@
+---
+layout: post
+title: "站点搭建琐事"
+date: 2017-02-07 20:25:43 +00:00
+permalink: /blogs/1
+---
+### web UI
+
+materializecss vs bootstrap vs self-wheel
+
+### web framework
+
+tornado vs django vs flask.
+
+### 数据库
+
+#### 修改编码为 utf8mb4
+
+utf8mb4 vs utf8 -> utf8mb4 完全兼容 utf8，utf8 支持 emoji ☺️
+
+1. 修改 mysql 配置文件（全局配置）
+
+    
+        [mysqld]
+        character-set-server = utf8mb4
+        collation-server = utf8mb4_unicode_ci
+        [mysql]
+        default-character-set = utf8mb4
+
+
+2. 如果数据库是在修改编码之前创建的，那还需要手动更改数据库的相关编码配置
+
+        ALTER DATABASE semo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+3. 修改表的编码配置
+
+        mysql --database=dbname -B -N -e "SHOW TABLES" | awk '{print "SET foreign_key_checks = 0; ALTER TABLE", $1, "CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; SET foreign_key_checks = 1; "}' | mysql --database=dbname
+
+### markdown 支持
+
+- pygments + markdown2(with extra)  + pygments.css
+
+```python
+import os
+
+print('hello world')
+```

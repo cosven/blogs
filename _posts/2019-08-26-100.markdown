@@ -1,0 +1,223 @@
+---
+layout: post
+title: "每周阅读 2019-08 月之前（补）"
+date: 2019-08-26 04:40:41 +00:00
+permalink: /blogs/100
+tags: [reading, weekly]
+categories: [阅读]
+---
+以前把一些零碎的阅读笔记临时的放在 GitHub issue 上，想想还是整理到博客中来
+
+1. 笔记多了，放 issue 里面，会让 issue 变得特别长，下拉起来比较麻烦
+2. 放博客里面算是个归档把，以后方便搜索
+
+2019-02-11 ~ 2019-02-17
+--------------------
+
+### 历时三年，美图全面容器化踩过的坑
+https://mp.weixin.qq.com/s/lfN9O7qwWQZCx_iqiAqP0g
+
+1. 讲了容器化的背景，以前存在哪些问题（大家的问题似乎是大同小异
+2. 搞容器嘛，选择了当时口碑好地 Kubernetes（基本是跟着开源社区、业界走嘛，一般不自己造轮子
+3. 容器平台主要会涉及到这些方面（似乎都是干货）
+   1. 网络
+   2. Load Balance
+   3. 日志
+   4. 调度
+   5. 弹性伸缩容
+   6. 监控
+4. 业务落地
+5. 展望未来：ServiceMesh, Serverless, 边缘计算
+
+**收获**
+
+对容器平台有一个整体的认识，知道这个大饼里面有哪些东西。
+文章对几个容器化种遇到的几个重点问题也有描述，如果以后自己遇到，感觉也是可以参考的。
+
+另外，感觉基础设施都会涉及网络、LB、日志、调度、伸缩容、监控这些主题，
+似乎主要也就这些主题把。不知道这个方面有没有类似 12 factor 的总结。
+
+### Kubernetes monitoring architecture
+https://github.com/kubernetes/community/blob/master/contributors/design-proposals/instrumentation/monitoring_architecture.md
+
+Kubernetes 监控分为两个方面（官方描述为 Pipeline）:
+
+1. core metrics pipeline: 个人理解为指标 **采集** , Kubernetes 会提供 API 供外部访问，Kubernetes 内部也会基于这个数据确认一些调度策略等
+2. monitoring pipeline: 指标存储、展示、报警
+
+文章后面还描述了这两个 pipeline 涉及的工具链以及一些预期的使用场景。
+比如 core metrics 涉及到 kubelet, metrics server; monitoring 与 Prometheus, InfluxDB, Grafana 这些概念紧密相关。
+(自己对监控这部分也不是特别理解，所以暂时只能理解到这个程度)。
+
+### Monitoring Kubernetes with Prometheus | Prometheus Docker Monitoring
+https://coreos.com/blog/monitoring-kubernetes-with-prometheus.html
+
+- 监控很重要
+
+> Monitoring is one of the pillars of successful infrastructure.
+> It has been called the [https://www.infoq.com/news/2015/06/too-big-to-fail](base of the hierarchy of reliability)
+
+这两张图挺有意思的
+
+![Mikey Dickerson’s “hierarchy of reliability”](https://res.infoq.com/news/2015/06/too-big-to-fail/en/resources/Dickersons%20Hierarchy%20of%20Reliability.png)
+![Maslow's hierarchy of needs](https://en.wikipedia.org/wiki/File:MaslowsHierarchyOfNeeds.svg)
+
+- 现代基础设施监控与以往不同（监控层级不一样了）
+
+> Effective use of Kubernetes requires architects to think about applications and workloads
+> rather than machines and processes.
+
+- 文章后面讲的是一些具体的安装使用姿势
+
+
+2019-05-06
+---------------------------------------------
+### 分布式系统测试那些事儿
+
+原文：[PingCAP 博客](https://pingcap.com/blog-cn/#%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E6%B5%8B%E8%AF%95)
+
+开头说：
+> 我们是觉得做好分布式系统测试比做一个分布式系统更难
+
+然后分几点来论述：
+
+> **A simple “Hello world” is a miracle** 
+>
+> 批注：hello world 程序要成功的跑起来，那 OS/VM/Compiler 等底层部件都得没有 bug。
+
+我觉得这么说也不是很准确（或者说这样表达很容易有误导性），只能说明这些组件用于运行 hello world 是没有 bug 的。在正确的 path 上没有问题。
+
+> **A RPC “Hello world” is a miracle**
+>
+> 批注：RPC 的 hello world 涉及组件更多，序列化/反序列化，网络协议栈，服务发现等
+
+> 就是一个真正完善的系统，最终的错误处理代码实际上通常会比你写正常逻辑代码还要多的，但是我们的测试通常 cover 的是正确的逻辑，就是实际上我们测试的 cover 是一小部分。
+
+中间开始说：
+> 那先纠正几个观念，关于测试的。就是到底怎么样才能得到一个好的、高质量的程序，或者说得到一个高质量的系统？
+
+> **Who is the tester ?** 批注：测试是一种文化，团队人人都应该是测试
+>
+> - Quality comes from solid engineering.
+> - Stop talking and go build things.
+> - Don’t hire too many testers.
+>     - Testing is owned by the entire team. It is a culture, not a process.
+> - Are testers software engineers? Yes.
+> - Hiring good people is the first step. And then keep them challenged.
+
+Stop talking and go build things. 有点像 Talk is cheap, show me the code.
+
+> **Test automation**
+> 
+> - Allow developers to get a unit test results immediately. 批注：快
+> - Allow developers to run all unit tests in one go. 批注：简单（和 CI 的那本书里面说的一样）
+> - Allow code coverage calculations. 
+> - Show the testing evolution on the dashboards. 批注：可视化测试结果，包括覆盖率
+> - Automate everything. 批注：自动化
+
+> **Well… still not enough ?** 批注：似乎是讲一些测试思路
+>
+> - Each layer can be tested independently.
+> - Make sure you are building the right tests.
+> - Don’t bother great people unless the testing fails.
+> - Write unit tests for every bug
+
+里面提到一个事情：修复的 bug 一定要有单元测试。
+
+> **Code review** 批注：这里讲的应该是一个持续集成的思想
+>
+> - At least two LGTMs (Looks good to me) from the maintainers.
+> - Address comments.
+> - Squash commit logs.
+> - Travis CI/Circle CI for PRs.
+
+> **Who to blame in case of bugs?** - The entire team.
+
+> **Profiling**
+> - Profile everything, even on production
+>   - once-in-a-lifetime chance 批注：这个不应该是针对 bug 来讲的么？
+> - Bench testing
+
+> **Embed testing to your design**
+> - Design for testing or Die without good tests
+> - Tests may make your code less beautiful
+
+**这个点似乎相对比较新颖**，据文章说，K8s 的某个类的某些代码专门是为测试准备的。
+
+文章这部分还讲了如果做测试：测试用例从哪来？如果方便的运行这些测试用例？
+文章举了一个例子：TiDB 的很多测试是从一些 ORM 框架中收集过来的。如果方便的跑 ORM 的测试用例呢，**record and replay**。不错呦，我当时以为是固定成一个脚本，但没想到可以这样抽象。
+
+好，文章这里有一个转折：
+> 那么刚刚说了那么多，实际上做的是什么？实际上做的都是正确路径的测试，那几百万个 test 也都是做的正确的路径测试，但是错误的路径怎么办？很典型的一个例子就是怎么做 Fault injection。
+
+批注：之前讲的内容比较偏方法论，后面来些干货？
+
+> **Fault injection**
+> - Hardware
+>   - disk error
+>   - network card
+>   - cpu
+>   - clock
+> - Software
+>   - file system
+>   - network & protocol
+> **SImulate everything**
+
+> 如果没有做错误路径的测试，那很简单的一个问题，现在假设走到其中一条错误路径了，整个系统行为是什么？这一点不知道是很吓人的。
+
+批注：Fault injection 在 SRE 团队似乎是个热门话题。
+
+一些 Fault injection 工具
+> **libfiu - Fault injection in userspace**
+> It can be used to perform fault injection in the POSIX API without having to modify the application’s source code, that can help to test failure handling in an easy and reproducible way.
+
+> **OpenStack fault-injection library:**
+> https://pypi.org/project/os-faults/
+
+> **Jepsen**
+> Jepsen: Distributed Systems Safety Analysis
+
+然后文章中举了 FoundationDB 的例子，说 FoundationDB 为了解决错误注入的问题，或者说怎么去让它重现的这个问题，做了很多事情，很重要的一个事情就是 **deterministic**。
+
+批注：我感觉似乎跑题了...
+
+2019-05-10
+------------------------
+
+### 软件测试工程师的核心竞争力是什么？
+https://www.infoq.cn/article/pUeQtGSXwDh28deki*gU
+
+文章 TOC：
+1. 功能测试、测试开发、性能测试工程师等核心竞争力
+2. 为什么会讲到“软件测试开发者的核心竞争力”
+3. 当测试人想往高处走时，是追求测试的深度，还是测试广度？
+4. 测试想去转测试开发，他需要积累哪些经验？
+5. 测试用例的力度怎么去把控？
+
+文章中说了三种类型的工程师：功能测试、测试开发、性能测试工程师。
+对于性能测试工程师（类似的也有安全测试工程师）：
+> 这类人的知识是需要经过很长时间才能积累起来，而不是一蹴而就，也不是通过一个简单培训就能够把这类人培养起来。这种人，他看到的业务场景越多，看到过的问题越多，他能很快地根据这个问题的现象，去决定进一步做怎么样的测试，或者去拿哪些指标。有了这些指标之后，他可以快速缩小问题的范围。
+
+> 测试开发又分为两类：
+> 1. 一类是专门做测试基础架构，做平台，做工具开发的
+> 2. 还有一类是专门去这些平台去做测试用例的，自动化测试用例开发的
+
+文章提到一个很有趣的问题：当测试人想往高处走时，是追求测试的深度，还是测试广度？不禁让我想到了 DevOps 人。
+> 那你是怎么去做权衡、去做取舍？因为大家的时间、精力总是有限的。从我个人的经历来讲，一定是从深度再到广度。
+
+**UPDATE 2019-05-14**: 今天又来读了一下这篇文章（采访），发现这是个标题党，文章里面并没有给出标题的答案。
+
+2019-05-14
+------------------------
+### 软件测试工程师的核心竞争力是什么？
+https://time.geekbang.org/column/article/11325
+
+> **传统测试工程师师应该具备的核心竞争力**
+>  
+> 1. 第一项核心竞争力，测试策略设计能力
+> 2. 第二项核心竞争力，测试用例设计能力
+> 3. 第三项核心竞争力，快速学习能力
+> 4. 第四项核心竞争力，探索性测试思维
+> 5. 第五项核心竞争力，缺陷分析能力
+> 6. 第六项核心竞争力，自动化测试技术
+> 7. 第七项核心竞争力，良好的沟通能力

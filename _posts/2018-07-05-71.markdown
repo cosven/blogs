@@ -1,0 +1,96 @@
+---
+layout: post
+title: "iterable and iterator"
+date: 2018-07-05 15:48:23 +00:00
+permalink: /blogs/71
+tags: [python, iterable, iterator]
+categories: [稍微正经点的]
+---
+以前经常看到这两个术语，但是感觉区分这两个东西并没什么用，而且
+日常实践好像也不要求我区分他们。今天恰好自己碰到一个问题：
+
+> 有一个类 A，A 有一个私有属性是 b，b 是个列表，一部分代码
+逻辑需要访问 b 的元素，但由于它是私有，所以我想让 a 具有以下能力：
+> 1. 访问 `a[1]` 时，它自动会返回 `b[1]`
+> 2. `for each in a` 相当与 `for each in b`
+
+查了些资料，说可以在 A 类实现一下 [`__getitem__`](https://docs.python.org/3.3/reference/datamodel.html#object.__getitem__) 方法，但是当时不是很明白
+这东西和 `__iter__`、 `__next__` 的关系，而一说起 iter 和 next，又让人情不自禁
+的想起 iterable 和 iterator 这两个东东，于是就有了下面这个笔记 ->
+
+## iterable
+> An object capable of returning its members one at a time.
+
+看这个定义可知，它并不是个形容词，而是个名字，一般翻译为 `可迭代对象`。
+
+**身为 iterable 的必要条件们**：
+
+- 定义了 an `__iter__()` or `__getitem__()` 方法的类.
+- 调用 iter(object) 时，它需要返回一个 `iterator`
+- Iterables can be used in a for loop and in many other places
+where a sequence is needed (zip(), map(), …).
+
+值得注意的是（充分条件）：
+> The only reliable way to determine whether an object
+is iterable is to call iter(obj).
+
+所以下面这个代码其实并不能真正的检测一个对象是不是 iterable
+```python
+>>> from collections.abc import Iterable
+>>> class B(object):
+>>>     def __iter__(self):
+>>>         raise
+>>> b = B()
+>>> print(isinstance(b, Iterable))
+True
+```
+可以顺便瞄一眼 [collections.abc.Iterable 的源码](https://github.com/python/cpython/blob/master/Lib/_collections_abc.py#L243-L256)
+
+（顺便找了下 `iter` 的 [源码](https://github.com/python/cpython/blob/master/Objects/abstract.c#L2521-L2545)，
+可惜好像看不太懂，先不管了
+
+## iterator
+> An object representing a stream of data.
+
+- Repeated calls to the iterator’s next() method return successive items in the stream.
+When no more data are available a StopIteration exception is raised instead.
+- Iterators are required to have an `__iter__()` method that returns the iterator
+object itself
+- 一个 iterator 只能被遍历一次，没有元素之后就抛个 `StopIteration` 的
+异常，不像 list 那样可以被遍历多次。
+
+
+```python
+>>> class A(object):
+>>>     def __init__(self):
+>>>         self.i = 0
+>>>     def __iter__(self):
+>>>         return self
+>>>     def __next__(self):
+>>>         self.i += 1
+>>>         if self.i < 5:
+>>>             return self.i
+>>>         raise StopIteration
+>>> a = A()
+>>> for each in a:
+>>>     print(each)
+>>> for each in a:
+>>>     print('hello ?')
+1
+2
+3
+4
+```
+
+## 小结（个人理解篇）
+
+- 一个类可以通过实现 `__getitem__` 方法，来让类实例支持 a[1] 这样的访问方法。
+- Iterator 是一次性遍历用的
+- Iterator 是 Iterable 的子集；list 也是 Iterable，dict 也是
+
+所以问题的答案大概就是：给 A 类实现一个 `__getitem__` 方法
+
+
+参考资料：
+
+- Python 专业术语表 https://docs.python.org/3/glossary.html#term-iterable

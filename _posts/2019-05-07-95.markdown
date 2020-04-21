@@ -1,0 +1,169 @@
+---
+layout: post
+title: "Socket FAQ 集锦"
+date: 2019-05-07 12:43:22 +00:00
+permalink: /blogs/95
+tags: [socket, TCP/IP, networking]
+categories: [稍微正经点的]
+---
+参考网上各大博客或者 RFC 以解决自己对 Socket 编程或者说 TCP/IP 协议的众多疑问。
+感觉目前自己理解的也不成体系，记录的内容也都是一些零散知识点。
+
+## TCP “粘包” 问题
+
+TCP 本没有包的概念，但是在应用层，很多协议需要“分包”。
+在 HTTP 协议中，它的“包”就是“消息（Message）” 详情可以看 [RFC2616][http_message]。
+
+分包的一般方法是把一个包分为两部分：header 和 body。
+header 以 `\r\n` 这样的特殊标识为结束的标识，另外，在 header
+里面保存 body 的长度。这样就能实现分包。
+
+这样的分包策略在 HTTP, memcached, Redis 等通信协议中都有用到。
+
+## TIME_WAIT 问题
+
+`TIME_WAIT` 是**主动**断开连接的一方的一个状态，从 `TIME_WAIT` 到
+`CLOSED` 状态，中间需要 2*MSL 的时间（Maximum Segment Lifetime
+据说：在 Linux 上为 30s，RFC 上写的是 2min）。
+
+这个状态有两个目的：
+
+1. 让延迟的 segments 不会影响到新连接（这解释了为什么是 2*MSL）
+2. 让对端有足够的时间收到 ACK。如果 ACK 消息丢失，对端重发 FIN，
+处于 `TIME-WAIT` 状态的连接可以重发它的 ACK。
+
+**当服务器上 TIME-WAIT 数量太多怎么办？** （面试题一个）
+
+出现大量的原因：一般是有大量短连接，并且总是由一端来关闭连接时，
+（想想这种现象大部分应该都是出现在服务器上把。
+但很多资料都考虑了客户端也出现这种情况的处理方案）。
+
+看了很多博客，比如 [coolshell 博客][coolshell_tcp_1] ，它们大概的意思基本相同，
+都说有下面几种办法可以解决：（ps: 讲 `tcp_tw_recycle` 的博客是真的多）
+
+1. 不主动断开连接。比如在服务端使用长连接。比如一个 HTTP Server，可以设置 keep-alive
+2. 调整内核参数： 打开 `tcp_tw_recycle` 和 `tcp_tw_reuse`。
+但 recycle 参数对于来自 NAT 网络的客户端会有问题，常见的是 syn 包被丢弃，connection timeout。
+
+值得一提的是：[这篇博客][timewait_essay_2]对这个问题有这么一个结论：
+
+> On the **client** side, enabling `net.ipv4.tcp_tw_reuse` is another almost-safe solution.
+> Enabling `net.ipv4.tcp_tw_recycle` in addition to `net.ipv4.tcp_tw_reuse` is mostly useless.
+
+试想这样一个场景：有三个角色 web server, LVS, DB server，LVS 到 DB 是短连接。
+每次都是 web server 来关闭连接，这时候在 LVS 上打开 reuse 似乎就是有用的。
+
+> On the **server** side, do not enable `net.ipv4.tcp_tw_recycle` unless
+> you are pretty sure you will never have NAT devices in the mix.
+> Enabling `net.ipv4.tcp_tw_reuse` is useless for incoming connections.
+
+根据 PAWS 的 RFC，内核会有这样一个行为：
+a per-host cache of the last timestamp received from any connection。
+注意这里是按照 host 而不是按照五元组来缓存的。
+
+所以（这里是我自己的理解），以在上面这个场景中为例，如果每次是 DB server 主动关闭连接，
+那么在 DB server 打开 recycle 选项会缓解 TIME-WAIT 问题。但是 DB server
+会缓存来自 LVS 的 segment 的最大的 timestamp，于是小于最大 timestamp 的
+segment 会被丢弃。而 LVS 的 segment 的 timestamp 并不是 LVS 这个机器生成的，
+它只是转发 client 的 segment 时，不会修改 client segment 的 timestamp，
+如果有多个 client 通过 LVS 连接 DB Server，那么如果 client 发送的 segment
+的 timestamp 相对于其它 client 比较小，它就会被丢弃。
+
+最后值得一提得是：如上面博客所说 `tcp_tw_recycle` 在 4.12 版内核中已经移除啦。
+
+一些参考资料:
+
+- 一个 `TIME-WAIT` 参考文章： [TIME-WAIT and its design implications for protocols and scalable client server systems][timewait_essay]
+- 据说：tcp timestamp 主要是为了准确计算 RTT 而诞生的 [ref](http://perthcharles.github.io/2015/08/27/timestamp-intro/)。
+
+
+## SYN Flood
+
+主要参考 [coolshell 博客](coolshell_tcp_1)
+
+> 客户端发送一个 SYN，服务端收到后会恢复 SYN-ACK，如果之后客户端不回 ACK
+> 或者 ACK 丢失了，服务端会重发 SYN-ACK，在 linux 下，重发策略是：
+> 重试次数为 5 次，重试间隔使用的是指数退避算法，1/2/4/8/16，
+> 第 5 次发出后要等 32s 才知道是否超时。
+
+> 于是，Linux下给了一个叫 `tcp_syncookies` 的参数来应对这个事——当SYN队列满了后，
+> TCP会通过源地址端口、目标地址端口和时间戳打造出一个特别的
+> Sequence Number 发回去（又叫cookie），如果是攻击者则不会有响应，
+> 如果是正常连接，则会把这个 SYN Cookie发回来，然后服务端可以通过 cookie 建连接
+> （即使你不在SYN队列中）。
+
+`tcp_syncookies` [kernel 相关代码][code_tcpsyncookies]，从源代码可以看出，
+当（半连接）队列满了，并且打开这个选项时，会使用 cookie 这个机制。
+
+指数重试 [kernel 相关代码][code_tcp_synack_retry]
+
+### syncookie 会带来什么问题麽？
+
+
+### tcp timestamp 到底是个啥？
+TIME-WAIT 相关问题，syncookies 子问题
+
+tcp timestamp 是在 [rfc1323][rfc1323] 中提出的。有一篇[中文博客][cn-blog-rfc1323]
+解读了这个 rfc。
+
+贴一下这个博客中的总结
+> timestamp 为 TCP/IP 协议栈提供了两个功能：
+>
+> a. 更加准确的 RTT 测量数据，尤其是有丢包时  -- RTTM
+> b. 保证了在极端情况下，TCP 的可靠性         -- PAWS
+
+我补充一点自己另外看的一些资料：
+
+[这里][tcpheader_image] 有个 TCP Header 的图，tcp timestamp 信息就保存在
+`Options and padding` 这个部分中。
+
+![TCP header](https://i.imgur.com/kONNCNr.png)
+
+
+**PAWS 子问题：PAWS 会导致丢包么？** 似乎是不会的，PAWS 是针对一个连接来说的。
+只是 PAWS + `tcp_tw_recycle` 会导致丢包，因为 recycle 机制读的 timestamp
+是 per-host 的。
+
+
+## 为啥不能三次挥手？
+
+建立连接的时候，有个包是 synack，那为什么关闭连接的时候，不能搞个 finack 呢？
+看 tcpheader 就知道，这种包是可以存在的。
+（回答：看 stackoverflow，据说 finack 也是可以的，主动方进入 time-wait 状态。）
+
+## TCP 超时与重传
+
+**什么时候会重传？**
+
+[CQ 小子博客][cq-blog-tcp-retran]如是说：
+
+> 发送数据包在一定的时间周期内没有收到相应的ACK，等待一定的时间，
+> 超时之后就认为这个数据包丢失，就会重新发送。这个等待时间被称为 RTO。
+
+注：RTO(Retransmission Timeout) 值会根据网络状况进行调整。
+据说主要是根据 RTT(Round-Trip Time) 来计算，而上面说的 tcp timestamp
+和 RTT 的计算也是有关系的。
+
+**怎样重传？**
+
+[coolshell 博客][coolshell_tcp_1]中提到了两种重传机制：
+快速重传（Fast Retransmit）和 SACK 方法。SACK 看着像是对 Fast Retransmit 的一种补充。
+
+最基本的重传方法似乎是指数退避重传，每隔 `1/2/4/8 * RTO` 来传。
+
+## socket 超时的实现
+
+socket的read timeout是怎么实现的？ - Cosven的回答 - 知乎
+https://www.zhihu.com/question/34564962/answer/609026211
+
+
+[http_message]: https://tools.ietf.org/html/rfc2616?#page-31
+[timewait_essay]: http://www.serverframework.com/asynchronousevents/2011/01/time-wait-and-its-design-implications-for-protocols-and-scalable-servers.html
+[coolshell_tcp_1]: https://coolshell.cn/articles/11564.html
+[timewait_essay_2]: https://vincent.bernat.ch/en/blog/2014-tcp-time-wait-state-linux
+[code_tcpsyncookies]: https://github.com/torvalds/linux/blob/master/net/ipv4/tcp_input.c#L6409
+[code_tcp_synack_retry]: https://github.com/torvalds/linux/blob/master/net/ipv4/inet_connection_sock.c#L748)
+[tcpheader_image]: http://www.networksorcery.com/enp/protocol/tcp.htm
+[rfc1323]: https://tools.ietf.org/html/rfc1323
+[cn-blog-rfc1323]: http://perthcharles.github.io/2015/08/27/timestamp-intro/
+[bq-blog-tcp-retran]: https://blog.csdn.net/wdscq1234/article/details/52476231

@@ -1,0 +1,49 @@
+---
+layout: post
+title: "没事看看 pycon 2017 视频"
+date: 2017-05-27 08:10:40 +00:00
+permalink: /blogs/36
+tags: [pycon2017]
+---
+### Awesome Command Line Tools
+
+1. Persistent History
+2. History search
+3. Emacs Keybinding
+4. Paged output (low)
+5. Auto-Completion
+6. Minimal Config
+7. Syntax Coloring
+
+### Rethinking the Web API framework
+
+说到底就是一个项目嘛：[apistar](https://github.com/tomchristie/apistar)
+
+[视频链接](https://www.youtube.com/watch?v=Rk6MHZdust4)
+
+### The Python Visualization Landscape
+
+说到底就是也是一个项目：[altair](https://github.com/altair-viz/altair)
+
+### How to make a good library API
+
+一个网站：python.apichecklist.com
+
+感觉讲的很实用诶 ~
+
+1. Simplicity, focus on the 90% use cases (simplicity) 10% (flexibility)
+2. flexibility (design patterns are missing language features)
+3. safety
+
+### Immutable Programming Writing Functional Python 
+
+感觉不太好玩
+
+
+### Title Available On Request: An Introduction to Lazy Evaluation
+感觉确实是个 Introduction
+
+### Library UX: Using abstraction towards friendlier APIs
+看起来也挺好的呀（我是不是对整洁代码更感兴趣哩）
+
+### 待看：The Fastest FizzBuzz in the West: Make Your Own Language with RPLY and RPython

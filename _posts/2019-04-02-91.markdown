@@ -1,0 +1,141 @@
+---
+layout: post
+title: "算是职业规划调研"
+date: 2019-04-02 09:59:05 +00:00
+permalink: /blogs/91
+---
+我之前做过 工程效率、运维开发 两个岗位，这两个方向似乎都和 DevOps 挂钩，
+我也没有深入对比过这几个岗位的差别。但自己最近一年都感觉这个方向，
+是要求工程师有一定的技术广度（从前端到运维），但是对深度要求不高，
+感觉一不小心就会被变成一个**只**会写 CRUD 的工程师。
+
+但我自己（似乎）还是希望在一个方向有比较深入一点的研究，于是就在想一个问题：
+**自己的兴趣爱好到底是什么？可以匹配到哪个岗位？**
+
+想了两三天，也没啥结果，只能先整理一下自己知道的一些工作和岗位。
+
+下面的文字主要包含以下内容
+
+- DevOps/工程效率/运维开发/SRE/研发效能 这些岗位之间的区别
+- 记录一些后端的学习方向
+
+## SRE vs DevOps
+
+推荐文章：https://juejin.im/post/5b95448cf265da0aa41e4e6c
+
+比较认同：DevOps 是一种文化，SRE 则是一种具体的岗位。但在需求的推动下，DevOps 演变成一个岗位。另外，个人感觉 DevOps 和**敏捷开发**这个概念也是兮兮相关的。
+
+其中，提到的工作内容区别也挺有意思。
+
+| DevOps                                            | SRE                                             |
+|---------------------------------------------------|-------------------------------------------------|
+| 设定应用生命管理周期制度，扭转流程                | 制定 SLA 服务标准                               |
+| 开发、管理 开发工程师 /QA 工程师使用 开发平台系统 | 开发、选型、管理 各类中间件                     |
+| 开发、管理 发布系统                               | 开发、管理 分布式监控系统                       |
+| 开发、选型、管理 监控、报警系统                   | 开发、管理 分布式追踪系统                       |
+| 开发、管理 权限系统                               | 开发、管理 性能监控、探测系统（dtrace、火焰图） |
+| 开发、选型、管理 CMBD                             | 开发、选型、培训 性能调优工具                   |
+| 管理变更                                          | 管理变更                                        |
+| 管理故障                                          | 管理故障                                        |
+
+## DevOps vs 前后端
+
+两者的发展路线图：https://github.com/kamranahmedse/developer-roadmap
+
+个人感觉 DevOps 岗和前端区别还是很明显的，DevOps 岗往往需要对前端有一定了解，会用，但不求精通。
+
+## 工程效率
+
+一种理解：
+
+> Productivity Engineering aims to reduce cognitive load so that engineers
+> can devote the majority of their attention to delivering business value.
+>
+> https://medium.com/@ProdEngSV/productivity-engineering-4aff8b560d0b
+
+### 在 Google
+
+**职业发展方向**
+
+> You will learn about testable and maintainable systems as well as
+> sustainable engineering practices. You will also develop your communication,
+> collaboration, and leadership skills. What you do with these skills will be up to you!
+
+**怎样判断是否提高效率？**
+
+Google Engineering Productivity (data-driven):
+> You believe that unless you can quantify or measure something,
+> you probably can’t improve it
+
+
+## 运维开发
+
+我自己的理解：
+
+早期的运维开发就是将运维自动化，当时应该还没有 CI/CD 这些东西，
+但后来大家都渐渐接收了 DevOps 这个文化，这个岗位渐渐演变成 DevOps 开发工程师。
+
+## 研发效能
+
+我自己的理解：
+
+DevOps 关注的中心是应用（服务），流程是从开发到发布到运维：Dev -> Delivery -> Ops
+研发效能关注的中心是项目，流程是从立项到开发到上线：Project -> Dev -> Delivery
+
+## Tooling
+
+这个应该不是一种岗位，更像提升作某件事情效率的是一种手段
+
+----------------------------------------------
+
+## 大数据
+
+### Hadoop 生态圈
+
+![hadoop ecosystem](https://d2h0cx97tjks2p.cloudfront.net/blogs/wp-content/uploads/sites/2/2017/04/Hadoop-Ecosystem-2-01.jpg)
+
+- HDFS: 分布式文件系统
+- Yarn: 集群资源管理、调度：接收计算的任务把它分配到集群各节点处理
+- Mapreduce: 数据处理
+- HBase: 高可靠性、高性能、面向列、可伸缩、 实时读写的分布式数据库
+- Zookeeper:
+- Hive: 适合用来对一段时间内的数据进行（离线）分析查询
+- Thrift: 远程服务调用框架（接口描述语言）
+- Flume: 高可用的，高可靠的，分布式的海量日志采集、聚合和传输的系统
+- ambari: 创建、管理、监控 Hadoop 的集群
+- Sqoop: Hadoop和关系数据库服务器之间传送数据
+- oozie: Oozie 是一个管理Hdoop作业（job）的工作流程调度管理系统
+- HCatalog: 用一种统一的形式将Hive数据仓库中的数据的metadata开放给需要的服务
+- Pig: 一部分是用于表达数据分析程序的高级脚本语言
+
+相关：
+
+- spark: 似乎和 mapreduce 类似
+
+-----------------------------------------------
+
+## 基础组件
+
+- 消息队列：Kafka vs RabbitMQ vs Beanstalkd vs NSQ
+- RDS：MySQL
+- NoSQL: KV，时序，Mongo，ES，HBase(写多读少，比如日志记录)
+- 缓存：Redis
+- 代理，负载均衡：Nginx, HAProxy
+- 日志
+- 错误
+
+## 业务框架
+
+- RPC
+- REST
+- tracing
+- 资源服务发现
+- 动态配置（功能开关）
+- OAuth
+
+## 容器编排
+- Kubernetes
+
+## 分布式？
+这个方向似乎非常不懂
+- Raft？

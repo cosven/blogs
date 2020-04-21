@@ -1,0 +1,85 @@
+---
+layout: post
+title: "试用 KDE - 解决字体渲染问题"
+date: 2018-07-17 17:28:59 +00:00
+permalink: /blogs/73
+tags: [linux, kde, font]
+---
+## KDE 上的字体问题
+
+- Chromium Browser 中中文**显示不正常**的问题，fcitx 显示中文也不正常
+- Emoji 在 feeluown 和 Konsole 程序中**不能显示**
+- Konsole 显示中文也不正常
+
+### Chromium Browser 中文显示不正常
+之前 Chromium 中总是不能正确的显示 `关` 这个字，经过朋友 hexchain 的提醒，他说
+你这个是个日文字体，于是意识到可能是 Chromium 渲染时 fallback 到了一个日文字体。
+
+接着做了以下几件事情：
+
+- 在 Chromium 中将 standard font 设置为 `Noto Sans CJK SC`
+- 在 Chromium 中将 serif font 设置为 `Noto Serif CJK SC`
+- 在 Chromium 中将 sans font 设置为 `Noto Sans CJK SC`
+
+于是网页中的中文字体显示都正常的（不需要重启浏览器），但是还有个问题，
+地址栏中仍然不能正确的显示中文，尝试重启浏览器，无效，请看后文。
+
+### Konsole 不能显示 Emoji，显示中文不正常
+按照下面步骤即可进行修复 Konsole 不能显示 Emoji 的问题：
+
+- 修改 `~/.fonts.conf` 文件如下（ `~/.fonts.conf` 是 `~/.config/fontconfig/fonts.conf` 的软链）
+- 运行 `fc-cache -f -v` 命令
+- 重启 Konsole，即可发现 Emoji 已经显示正常，但是中文显示异常
+
+```conf
+<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+ <!-- <dir>~/.fonts</dir> -->
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>Ubuntu Mono</family>
+      <family>Noto Color Emoji</family>
+    </prefer>
+  </alias>
+```
+
+我猜测 Konsole 的字体渲染流程应该是这样的： 
+Konsole 首先看用户在设置页面中设置了什么字体，如果这个字体能够渲染某个字，那么就用这个字体。
+如果不能渲染某个字，Konsole 会去 fonts.conf 的 monospace 家族去找字体来渲染这个字。
+所以一开始的时候，Konsole 不能显示 Emoji，因为它找不到字体来渲染 Emoji。
+我们给 monospace 家族设置了 `<family>Noto Color Emoji</family>` 字体当作 fallback 字体之后，
+Konsole 也就正常了。
+
+但这时，中文字体显示仍然 **不正常**，我怀疑它应该是 fallback 到了一个什么系统日文字体。
+所以我们要做的就是给它一个可以 fallback 的中文字体 `<family>Noto Sans CJK SC</family>`
+
+```conf
+<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+ <!-- <dir>~/.fonts</dir> -->
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>Ubuntu Mono</family>
+      <family>Noto Sans CJK SC</family>
+      <family>Noto Color Emoji</family>
+    </prefer>
+  </alias>
+```
+
+### Chromium 地址栏和 fcitx 显示中文不正常，FeelUOwn 不能显示 Emoji
+按照上述思路：修改 fonts.conf 配置文件，运行 `fc-cache -f` 命令，重启这两个应用。
+可以发现 Chromium Browser 地址栏可以正确的显示中文，FeelUOwn 也可以正常的显示 emoji 了。
+最终配置请看 gist：https://gist.github.com/cosven/a0fae9230d63c4c80646b4e9ca647c0d
+
+## 总结
+
+经过三番五次的对字体配置的修改，有以下心得：
+
+1. fonts.conf 会影响所有的 GTK/QT 软件
+2. Chromium Browser 网页正文有自己的字体配置，可以进入 Chromium 的 settings 中设置。
+但是它的地址栏貌似不会受这个配置影响（可能由于地址这一部分是 GTK 实现的？）
+3. 系统有个默认的字体 fallback 逻辑
+3. 在 `<prefer></prefer>` 中配置多个字体可以实现字体 fallback，它优先于系统默认 fallback 逻辑，**这个解决以上问题的关键**
+4. 我们可以在 fonts.conf 中给每个种类（sans, sans-serif, monospace 三种）的字体都指定一个 fallback 字体

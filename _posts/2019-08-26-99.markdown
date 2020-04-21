@@ -1,0 +1,147 @@
+---
+layout: post
+title: "每周阅读 2019-08-12 ~ 2019-08-25"
+date: 2019-08-26 03:11:44 +00:00
+permalink: /blogs/99
+tags: [reading, weekly]
+categories: [阅读]
+---
+最近似乎没怎么系统的学习新东西，播放器的代码也加的比较慢。
+
+买了一本「软件测试艺术」，看了个序。操作系统啥时候继续学习下...
+
+蓝天白云的日子不少，但缺少出去浪的催化剂。
+
+迁户口、约饭、读书、写播放器、玩游戏、看电影电视剧、TODO 好多。
+
+这这两周看了一篇质量比较高的文章，另外还有几篇 tutorial 类的文章
+
+### Static Analysis at Scale: An Instagram Story
+https://instagram-engineering.com/static-analysis-at-scale-an-instagram-story-8f498ab71a0c?gi=68a0c09f9d35
+
+#### 文章读后梳理
+
+文章先说了 Instagram 是个 Python 大厂，所以项目在一个大仓库里面，而且 Instagram 每天要发布好几十次，维持代码质量是一件非常有挑战的事情，那 Instagram 是怎样解决这个问题的呢？
+
+Instangram 从几个方面下手（维持代码质量），Linting 就是一个方面。
+
+接着说了为什么需要 Linting？
+1. 开发者遭遇问题的时候，自己可能并没有意识到，Linting 可以帮助开发者发现并且诊断问题
+2. 在成百上千的开发者中普及优秀思想变得越来越难
+
+Linting 如果有用，那有哪些常见方法呢？
+1. 基于正则 -> easy, but dumb
+2. AST-based Lints（Pyre + Mypy）-> powerful, but complex
+
+谈 AST 的时候，不免要谈 CST，毕竟这是 Instagran 的主角：它说本来的 CST 会有点复杂，而 AST 又损失了比较多的信息。Instagram 就弄了个 LibCST，综合了两者的优点。
+LibCST 提供了一个类似 CST 这样的无损表示（lossless representation）（注：AST 是一种 IR intermediate representation），但是它也可以像 AST 一样，比较容易的解析出语义信息。
+
+举个了例子，LibCST 如果优雅的检测重复判断，示例代码：
+
+```
+# value imports
+from typing import TYPE_CHECKING
+from util import helper_fn
+
+# type-only imports
+if TYPE_CHECKING:
+    from circular_dependency import CircularType
+
+if TYPE_CHECKING:  # Whoops! Duplicate type guard!
+    from other_package import OtherType
+```
+
+对于这个例子，它们可以基于 LibCST 非常容易了写一个 linting 规则，它给了例子（这里不贴上来了）。
+
+这里才是文章的一半，这文章有点长呀...
+
+接着讲它们是怎样用 LibCST 来实现 Linting Rules，在这个实践过程中，它们又经历了几个阶段
+1. 初期：简单粗暴，使用 single visitor 模式。但是随着 rule 变多，这种模式很难维护
+2. 解决初期遇到的困难：参考 ESLint 的设计，它们开发了一个中心化的 visitor registry
+（这个部分没看太懂）
+
+Lint 太吵（想想大家都诟病的 Pylint），它们一方面把严重的问题给高亮；另外，开发了 auto-fixer 功能。
+
+Codemods: 自动修复代码，比如自动给代码加 type hint；修改差的函数名。
+
+最后说基于 scope analysis 可以做更高级的代码修改。
+
+最后总结：
+
+> Finding the code we want to modify is often more important than the modification itself.
+
+#### 文章读后感
+非常硬核的文章：背景 -> 方案对比 -> 确认方案 -> 方案应用 -> 应用遇到问题 -> 调整 -> 未来展望
+
+收获：
+1. 了解大厂 Linting 实践
+2. 好奇 AST/CST 都能干些啥？
+
+
+### API 分页
+
+关于分页，以前脑袋里面有几个疑问：
+
+- [x] offset + limit 和 page + pageSize 两种方式有什么区别？
+  目前来看，没啥区别，最多是便利性的问题
+- [x] 以前听说 MySQL 的 offset + limit 方式会有性能问题？
+  对，当 offset 较大时会，因为它实际上需要读取 offset + limit 行数据，改进办法是使用游标。
+
+注：上面两种接口都可以基于 MySQL 的 offset + limit 来实现。
+
+- [UX: Infinite Scrolling vs. Pagination](https://github.com/xitu/gold-miner/blob/master/TODO/ux-infinite-scrolling-vs-pagination.md)
+- [MySQL - 优化嵌套查询和分页查询](https://juejin.im/post/5bda4a966fb9a022852a74e0)
+
+### golang 相关
+
+#### go 什么时候用 make，什么时候用 var?
+
+https://stackoverflow.com/questions/25543520/declare-slice-or-make-slice
+
+根据回答中的描述，大多数情况都是用 `var`。一般来说，当 var 不能很好满足你需求的时候，就可以考虑用 make 了。另外，`var s []int` 的 s 是个 `nil`，而 `s := make([]int, 0)` 的 s 不是 `nil`，而是一个长度为空的 slice。
+
+另外，var 出来的 channel 只能是个同步 channel，而 make 可以创建出一个有缓冲区的 chan。
+
+#### 理解 Go interface 的 5 个关键点
+
+https://sanyuesha.com/2017/07/22/how-to-understand-go-interface/
+
+文章提到的几个点对目前的我挺有价值的：
+1. go 不会对 类型是interface{} 的 slice 进行转换 
+    ```golang
+    func printAll(vals []interface{}) { //1
+        for _, val := range vals {
+            fmt.Println(val)
+        }
+    }
+
+    func main(){
+        names := []string{"stanley", "david", "oscar"}
+        printAll(names)
+    }
+    ```
+    这段代码会报 cannot use names (type []string) as type []interface {} in argument to printAll 错误
+
+1. go 中函数都是按值传递即 passed by value
+1. go 会把指针进行隐式转换得到 value，但反过来则不行
+
+文章推荐了一篇：关于 go interface 底层实现的文章。
+- [ ] https://research.swtch.com/interfaces
+
+
+### Database 相关
+
+#### SQL prepare 是啥？
+
+前几天看到有个回答说 SQL prepare 可以做一些安全方面的事情，而我之前连 prepare 是啥都没听说过。今天在看 golang sql/database 库的接口也有 prepare，想着学习下这到底是是啥。
+
+这个回答很清晰的解释了什么是 prepare。
+
+如何从根本上防止 SQL 注入？ - 余天升的回答 - 知乎
+https://www.zhihu.com/question/22953267/answer/23192081
+
+### 其它
+
+#### cat hello.txt > hello.txt 之后，hello.txt 变成空了？
+
+https://unix.stackexchange.com/questions/41207/why-does-cating-a-file-into-itself-erase-it

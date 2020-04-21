@@ -1,0 +1,51 @@
+---
+layout: post
+title: "学习 Kubernetes 第二天 -  本地试用 Kubernetes"
+date: 2018-09-11 12:06:48 +00:00
+permalink: /blogs/76
+tags: [k8s, kubernetes]
+---
+昨天学习了 Kubernetes 的一些基础概念和命令，今天在本地搭建一个单机版 Kubernetes，
+并在上面运行一个 nodejs 的 web 应用。
+
+## 安装 Kubernetes
+
+我目前了解到的本地安装 Kubernetes 的方式有两种：
+
+-   使用 minikube
+-   使用 Docker for mac 提供的 Kubernetes 功能
+
+比较流行的方式是使用 minikube，自己也尝试过这种方法，最后失败了。
+
+我在运行 minikube start 的时候，程序 hang 住，看日志说是：dia tcp 196.xx.xx, connection refused。
+手动访问 <http://196.xx.xx:port/api/v1/nodes> 间断可以访问，怀疑是公司证书问题。
+在 GitHub 上看到不少的 minikube start 卡主的 issue，但没找到靠谱的解决方案，
+自己也不是特别懂，后来也没有继续折腾了。
+
+第二种方式是试用 Docker for mac 自带的 Kubernetes 功能，
+它安装 Kubernetes 时间比较长，感觉花了 10 来分钟，但整体非常流畅。
+
+## 试用 Kubernetes
+
+基本是参考[这个资料](https://kubernetes.io/docs/tutorials/hello-minikube/)完成整个操作流程。
+
+在试用的过程中有几个感受：
+
+1.  虽然昨天自己已经看过一遍 Kubernetes 的基础知识并自以为已经掌握
+
+Node/Pod/Service 等基础概念。但在实际实验中，发现自己并没有深刻理解。
+
+1.  安装一个 Kubernetes Web UI 对于实践来讲非常有用，它可以帮助我们了解 Kubernetes
+
+当前状态，对于新手非常有用。官方有安装教程，记忆中只需要两条命令即可。
+
+今日理解（明天可能又会有新的理解 =。=）：
+
+1.  Node 基本就是一台物理机或者虚拟机
+2.  Pod 和容器非常相似
+3.  Deployment 描述/声明了 Pods 将要的新状态：
+
+在实际场景中，我们常常会编写一个 yaml 文件来定义一次 Deployment，
+换个角度来看，也就是描述了 Pods 将要达到的状态
+
+1.  Service 是个抽象概念，它相当于：一系列 Pod + 给 Pod 定义一些策略（比如配置端口）

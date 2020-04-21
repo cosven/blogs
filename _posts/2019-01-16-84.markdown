@@ -1,0 +1,108 @@
+---
+layout: post
+title: "读《PC Assembly Language》-  小结"
+date: 2019-01-16 02:41:27 +00:00
+permalink: /blogs/84
+tags: [笔记, Assembly, OS]
+---
+**摘要**：学完第一章，了解了 CPU 相关的一些基础知识。8088 指什么？什么是寄存器？CPU 实模式是什么，保护模式是什么？A20 地址总线又是啥？32 位机器为什么只支持 4G 内存？这些小疑问都得到了比较好的解答。另外，看了下这本书的目录，其它章节似乎都是汇编语言语法细节，感觉暂时也没必要学习了。
+
+**看这本书的背景：**
+我之前尝试作 [xv6](https://pdos.csail.mit.edu/6.828/2018/labs/lab1/) 实验一，这个课程本身是要求学生有一定汇编基础的。我本来想的是没有基础，也可以先按部就班试试看嘛。
+但是作到第二个部分 boot loader 时，课程让我尝试看 boot.S 汇编代码，理解计算机启动过程，
+然后我就一脸萌了。这个汇编代码里面涉及到几个概念：CPU 实模式；16-bit 保护模式；A20 地址总线，
+另外，我肯定需要懂那么一点汇编语法才能看懂。但我对这些其实一点都不懂，于是我就想着回过头去，
+先学习下汇编语言。
+
+## Chapter 1: Introduction
+
+个人小结：
+
+这一章先讲了数字进制转换（2,10,16），汇编语言中一般使用 16 进制比较多（据观察），
+另外，内存地址换算和计算也常用到 16 进制，所以先复习了下数学基础。
+
+接着简介了内存，没有太多内容。主要需要意识到的是内存中的东西都是数字，
+我们常见的字符串在内存也是数字表示。
+
+然后介绍了 CPU 它简单叙述了 80x86 家族 CPU 迭代过程。重要里程碑有三个。
+一开始的 8088,[8086](https://zh.wikipedia.org/wiki/Intel_8086):它只支持 `real mode`, 寄存器是 16-bit，8086是Intel最成功的处理器系列x86架构的开端。；
+然后有了 80286，它支持 `16-bit protection mode` (这是一个很大进步),
+然后有了 80386，它支持 `32-bit protection mode` (这又是一个很大进步),
+后来基本上都算是改进。
+接着，讲解了 16-bit registers(寄存器), 32-bit register, 16-bit protection mode
+等概念。(这个部分对我启发很大，感觉补充了不少基础知识：**寄存器；实模式，保护模式；
+A20 地址总线**，这些我之前非常困惑的概念在这一章都有或多或少的解释)
+这个部分还解决了我以前的一个疑问：为什么之前的 32 位机器只支持 4G 内存，有点意思。
+
+最后简单介绍了几个常见的汇编指令，以及一个类似 hello world 的汇编程序。
+
+看书的目录，感觉这本书后面就是讲更多的指令和语法， *所以这本书可能就只看这第一章了把* 。
+
+另外，有一点感受是：**汇编和平时编程相距甚远，没必要平白无故学习**。
+
+下面是一些简单笔记
+
+### Number System
+讲解 2 进制，10 进制，16 进制相互转换
+
+### Computer Organization
+#### Memory
+- 内存基本单位是 byte
+- 所有内存中的数据都是数字(numeric)
+- 通过建立 `character-code` 将数字与字符对应，字符也用数字存储
+  - 最常见的 character codes 被熟知为 ASCII
+  - 一个新的，更完整的用来取代 ASCII 的 character code 是 Unicode
+  - ASCII 用一个 byte 来编码字符，Unicode 使用 two bytes
+
+#### The CPU
+- CPU 是用来执行指令(instructions)，这些指令叫做 =machine language= 。机器语言指令被编码为原始数字(raw number)
+- compiler 将编程语言代码转换为对应平台的机器语言。一般来说，每种类型的 CPU 都有它自己独特的机器语言
+
+CPU 使用时钟(`clock`)来同步指令的执行。时钟以固定的频率跳动。
+
+> When you buy a 1.5 GHz computer, 1.5 GHz is the frequency of this clock. The clock
+does not keep track of minutes and seconds. It simply beats at a constant
+rate. The electronics of the CPU uses the beats to perform their operations
+correctly, like how the beats of a metronome help one play music at the
+correct rhythm. The number of beats (or as they are usually called cycles)
+an instruction requires depends on the CPU generation and model.
+
+上面这一段很好的解释了 1.5GHz 的含义。
+
+#### 80x86 家族
+
+一开始，8088/86 CPU 只支持 =real mode=, 在实模式下，它支持访问 1M 内存，
+程序可以访问任意内存地址。它提供 10 来个 16 位的寄存器，程序内存需要被分成块，
+每块不能超过 64K (内存寻址是用一个寄存器，所以它只支持 $2^{16}$)。
+8088 是 CPU 名字，CPU 通过地址总线来访问内存，8088 的地址总线是 20-bit，所以它只能访问 1M 内存。
+
+后来有了 80286，它加了一些新的指令，提供了一种新模式 `16-bit protection mode`，
+在这个模式它支持 16M 内存。
+
+80386, 它对 80286 有大幅改进。它把许多寄存器扩展成 32 位。支持 =32-bit protection mode=,
+在这个模式下，它可以访问 4G 内存。程序也是被分成 segments, 不过每个 segment
+可以达到 4G。
+
+... 后续还有一些改进，不过似乎大部份都是量变，没有质变。
+
+#### 16-bit protection mode
+#### 32-bit protection mode
+相比于 16-bit protection mode
+
+1. Offsets 扩展到 32 位，所以 segments 可以达到 4GB
+2. Segments 可以被放在 4K 大小的单元，称之为 pages。在 16-bit 模式下，
+要么整个 segment 都在内存中，要么都不在。
+
+#### Interrupts
+
+### Assembly Language
+#### Machine Language
+适合机器，但不适合人读
+
+#### Assembly language
+- =assembler= assembly to machine
+- =compilers= high-level programming language to assembly
+
+#### Instruction operands
+#### Basic instructions
+讲了 =mov=, =add=, =sub= 等创建操作符，介绍了 =%symbol= =%define= 等指示符号。

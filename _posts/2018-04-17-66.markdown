@@ -1,0 +1,96 @@
+---
+layout: post
+title: "连接池-实践（待补充）"
+date: 2018-04-17 07:26:22 +00:00
+permalink: /blogs/66
+tags: [socket, connection pool, tcpdump]
+categories: [工具啥的]
+---
+- [ ] 连接池是什么？它的实现原理？
+- [x] 连接池需要自动处理 Connection Reset 这类错误吗？为什么？不需要，上层做
+- [ ] When to use connection pool? typical usage?
+- [ ] https 有什么区别吗？
+
+
+## 一些基础
+### TCP keep-alive 和 HTTP keep-alive
+- TCP keep-alive: 每隔一段时间，一端发一个会 keep alive 的包，如果收到回复，则认为连接正常。
+- HTTP keep-alive: 超过多少次或者超时才会关闭连接
+
+### HTTPS
+HTTPS 看起来是在 TCP 和 HTTP 中间加了一层 TLS/SSL
+
+## ConnectionPool Overview
+### 关于连接池的几个结论
+1. 当连接出现问题，连接池会废弃掉这个连接
+2. 当出现 Connection Reset 等错误，连接池没有义务自动重试，一般应用应该允许偶然出现的 Connection
+3. 连接池技术大概有 10 年之久了，非常成熟
+
+## Connection Reset Simulation
+
+##### start a server which supports persistent connections.
+
+```python
+from werkzeug.serving import WSGIRequestHandler
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    return 'hello world'
+
+
+WSGIRequestHandler.protocol_version = "HTTP/1.1"
+app.run()
+```
+
+##### capture packet using tcpdump
+
+```shell
+# capture packet send to/by port 5000(only fin/syn packet)
+sudo tcpdump -i lo port 5000 and "tcp[tcpflags] & (tcp-fin|tcp-syn) != 0"
+```
+
+##### create a client, send one get request (see tcpdump output)
+
+```python
+import requests
+
+
+s = requests.Session()
+
+url = 'http://127.0.0.1:5000/'
+s.get(url)
+s.get(url)
+```
+
+##### intercept packet and kill server
+
+        ```shell
+        # add an iptables rule:
+        #  intercept all packet sended from port 5000
+        sudo iptables -A OUTPUT -p tcp --source-port 5000 -j DROP
+
+        # restart server
+        # Ctrl-C and start, or use kill
+
+        # lookup all OUTPUT rules
+        sudo iptables -L OUTPUT --line-numbers
+        # delete iptables rule
+        sudo iptables -D OUTPUT 1
+        ```
+
+##### use http client to send another GET request
+
+```python
+s.get(url)
+# it will raise:
+#  ConnectionError: ('Connection aborted.', error(104, 'Connection reset by peer'))
+```
+
+```txt
+13:22:43.728133 IP localhost.35126 > localhost.5000: Flags [P.], seq 2568123039:2568123183, ack 2754994964, win 359, options [nop,nop,TS val 3406097304 ecr 3405909308], length 144
+13:22:43.728157 IP localhost.5000 > localhost.35126: Flags [R], seq 2754994964, win 0, length 0
+```

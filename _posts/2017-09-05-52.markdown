@@ -1,0 +1,30 @@
+---
+layout: post
+title: "操作系统的一些基础知识..."
+date: 2017-09-05 11:33:14 +00:00
+permalink: /blogs/52
+---
+### Linux 文件系统
+
+- 文件名和文件信息分开(inode) 管理
+- 每个文件对应一个 inode，每个都有个唯一的 inode number
+- 目录项由文件名和 inode number 组成
+
+![与文件系统交互...](http://om9m4m0nt.bkt.gdipper.com/semo_imgs/0eb742f4925011e7a643deb5e997eb50.jpeg)
+
+#### 虚拟文件系统
+
+概念：超级块对象 `superblock`；索引节点 `inode object`；目录项对象 `denetry object`（是路径的组成部分，快速查找文件用的）；文件对象 `file object`（进行读写用的）；
+
+inode 结构体里面有个 i_op 结构，指明了这个 inode 有哪些操作。不同文件系统，这个 inode 操作可能不一样，实现也可能不一样。
+
+#### 目录检索算法
+hashed B-tree
+
+1. high fanout factor
+2. constant depth
+
+
+### Q&A
+#### 子进程能使用父进程的 socket 连接吗？
+可以，<https://stackoverflow.com/a/670897/4302892>

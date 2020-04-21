@@ -1,0 +1,223 @@
+---
+layout: post
+title: "揭开 asyncio 的神秘面纱 - 从 hello world 说起"
+date: 2019-03-09 16:39:02 +00:00
+permalink: /blogs/87
+tags: [python, asyncio, coroutine, 系列]
+categories: [稍微正经点的]
+---
+asyncio 是用来编写并发程序的库。在爬虫、客户端应用、等开发场景中，
+我们经常会需要将多个网络请求并行化来提高程序性能，而 asyncio
+框架正好可以很方便的帮助我们实现这个需求。
+
+我最早使用 asyncio 是在 2015 年、一个音乐播放器项目中。最开始用的时候，
+对这东西不是很了解，只知道它可以让多个网络请求一起发送出去，那时侯，
+代码基本都是从 stackoverflow 和网上各大博客中中摘抄下来，目标是能正常工作就行。
+
+但随着项目变大、疑问逐渐变多，我觉得自己需要了解 asyncio 背后的运行原理。
+于是在 2018 年初，我开始学习 asyncio，到现在快一年，断断续续的，
+感觉自己对它终于有了个整体认知，于是决定以文字形式来记录下自己对 asyncio 的理解。
+
+文字记录也有很多形式和风格，我之前的文字风格大多是流水帐、自言自语。asyncio
+这块知识，我想写成一系列的文章。一方面是想挑战下自己的写作能力；
+另一方面，目前网上 asyncio 相关资料也不是特别完整，想着把自己知道的都拿出来和大家分享下。
+
+## asyncio 背后的基础知识
+
+学习 asyncio 的过程特别艰辛，在学习它的时候，我发现自己有许多基础知识没有掌握，
+所以经常出现这样一个情况：我本来正在学习 asyncio, 而 asyncio 里面用到了 A 库，
+于是我就去理解 A，但 A 又依赖 B，于是我又得学 B，B 还可能会依赖 C...
+我碰到过很多这样的链式问题（和自己基础差也有一定关系），下面列出来的是我自己记忆比较深刻的问题：
+
+**基础知识相关问题**
+
+- 协程、线程、进程区别？
+- 异步、同步、阻塞、非阻塞的区别与联系？
+- 并发、并行的区别与联系？
+- ...
+
+**实现相关问题**
+
+- asyncio 和 event loop
+- 生成器是啥？yield from 又是个啥？
+  - 生成器和迭代器的区别？
+    - 迭代器是啥？
+  - 堆栈、栈帧指什么？
+- Future 是个啥？
+- select/pool 是个啥？
+- 信号量的使用场景都有哪些？
+- gevent 和 asyncio 区别和联系？
+- ...
+
+时至今日，对于上面提到的大部分问题，我都有了一些自己的想法。
+我想把自己的理解记录在这系列文章中。如果你恰好也对这些问题感兴趣，就请继续往下阅读把 ~
+
+## 关于系列文章的设想与声明
+
+在这个系列文章中，我把重点放在 asyncio 背后的原理以及相关的基础知识。
+至于 asyncio 的使用姿势（最佳实践），我不太会涉及，也确实没有太多相关经验，
+毕竟自己也还是个学习者，也没有在生产环境大量的使用它。
+
+--------------------------------------
+
+在这篇文章中，我们会编写一个程序来简单模拟 asyncio 的行为。
+读完这篇文章，读者应该会对下面两个问题有（大概的）认知：
+
+- asyncio 是怎样运行一个协程的
+- 在 Python 中，协程是基于什么来实现的
+
+## 从 hello world 说起
+
+看到这里，不知道读者会不会有个疑问：协程到底是什么？如果有的话，
+我觉得读者可以先把这个疑问藏在心中。我们暂时不需要纠结这个概念本身，
+在之后的内容或者文章中，我们会尝试给出几种解释。目前，
+我们只需对它有个整体的认识即可。
+
+在 Python 中，我们可以用 async/await 语法来声明一个协程。
+我们先来看一个实际的使用示例：用 asyncio 运行一个 hello world 协程
+
+```python
+import asyncio
+
+
+async def hello_world():
+    print('hello world')
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(hello_world())
+```
+
+运行这段代码，我们可以在终端看到程序打印出了 "hello world"。
+
+## 问题：如果不用 asyncio, 有办法运行协程嘛？
+
+我们知道，协程不能像普通函数那样直接执行。比如下面这段代码，它就没有打印出 hello world。
+并且，`hello_world` 函数的返回值也不是 None, 它是一个 coroutine 对象。
+
+```python
+>>> async def hello_world():
+...     print('hello world')
+...
+>>> coro = hello_world()
+>>> type(coro)
+<class 'coroutine'>
+```
+接着进行一些探索，我们可以使用 `dir` 方法来查看一个对象有哪些方法：
+
+```python
+>>> dir(coro)
+['__await__', '__class__', '__del__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__name__', '__ne__', '__new__', '__qualname__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'close', 'cr_await', 'cr_code', 'cr_frame', 'cr_origin', 'cr_running', 'send', 'throw']
+```
+
+忽略 `__` 开头的 magic 方法，我觉得 send 方法比较顺眼，就调用 coroutine 对象的 send 方法试试把：
+
+```python
+>>> coro.send(None)
+hello world
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+很巧诶，"hello world" 被成功的打印出来了，我们似乎达到了我们的目标：
+不用 asyncio 也能运行协程了。只不过，程序抛了一个 StopIteration 异常。
+但异常可以很容易的处理掉嘛，`try...except...` 一下就行了。
+
+```python
+>>> coro2 = hello_world()
+>>> try:
+...     coro2.send(None)
+... except StopIteration:
+...     pass
+...
+hello world
+```
+
+Cheers, 我们已经成功的模拟了 asyncio 的行为，将 `hello_world` 协程运行起来了。
+
+## hello world 进阶
+
+asyncio 还可以运行多个协程
+
+```python
+>>> import asyncio
+>>> loop = asyncio.get_event_loop()
+>>> async def job1():
+...     print('hello, job1)
+...
+>>> async def job2():
+...     print('hello, job2')
+...
+>>> loop.create_task(job1())
+<Task pending coro=<job1() running at <stdin>:1>>
+>>> loop.create_task(job2())
+<Task pending coro=<job2() running at <stdin>:1>>
+>>> try:
+...     loop.run_forever()
+... except KeyboardInterrupt:  # 处理 Ctrl-C
+...     pass
+...
+hello, job1
+hello, job2
+^C
+>>>
+```
+
+仍然，不依赖 asyncio，我们自己实现下。我们这次封装一个 run 函数，用来运行多个协程：
+
+```
+>>> coro1 = job1()
+>>> coro2 = job2()
+>>>
+>>> def run(*coros):
+...     for coro in coros:
+...         try:
+...             coro.send(None)
+...         except StopIteration:
+...             pass
+...
+>>> run(coro1, coro2)
+hello, job1
+hello, job2
+```
+
+Cool, it works!
+
+## 思考：coro.send 方法有什么神奇之处？
+
+从上面几个例子来看，asyncio 的原理似乎很简单，就是帮我们执行一下协程的
+send 方法嘛。
+
+等等，你知道 Python 的生成器么，它似乎也有个 `send` 方法，而且效果很类似：
+
+```python
+>>> def hello_world():
+...     print('hello, generator')
+...     yield
+...
+>>> g = hello_world()  # 生成一个生成器对象
+>>> g.send(None)       # 启动生成器
+hello, generator
+```
+
+与协程不同的时，在生成器这个例子里，我们调用生成器的 send 方法时，
+它并不会抛出异常。但如果我们再次执行一下 send 方法，它会怎样呢？
+
+```python
+>>> g.send(None)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+它也会抛出 `StopIteration` 的异常 ~ 行为非常相似！
+
+ummm... 大人，此事必有蹊跷！
+
+## 小结
+
+在本篇文章中，我们讲述了学习 asyncio 时可能会遇到的一些基础知识；
+看了几个简单的 asyncio 使用示例；并且自己动手编写了一个 run
+函数来运行多个协程，简单的模拟了 asyncio 的行为。
+最后，我们还发现：Python 的协程和生成器行为非常类似，但是它们具体是什么关系呢？
+还请听下回分解。

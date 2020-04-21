@@ -1,0 +1,205 @@
+---
+layout: post
+title: "调研 Python 生成器原理时的一些发现"
+date: 2018-09-17 17:52:46 +00:00
+permalink: /blogs/80
+tags: [python,  generator, 原理, 生成器]
+categories: [稍微正经点的]
+---
+一个常见的生成器使用示例：把生成器当作迭代器用
+
+```python
+>>> def func():
+...     for i in range(0, 3):
+...         yield i
+...
+>>> for i in func():
+...     print(i)
+...
+0
+1
+2
+```
+
+再看一个高级一点的例子：
+
+```python
+>>> def func():  # 定义一个生成器函数
+...     input = (yield 'hello world')
+...     print('You send: ', input)
+...
+>>> g = func()
+>>> g.send(None)
+'hello world'
+>>> g.send('hi')
+You send:  hi
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+在上面这个例子中，我们可以关注两个点：
+
+1. 生成器函数和普通函数的区别：普通函数执行的时候不能 **暂停**，而生成器可以。
+2. 生成器暂停后，我们可以再次恢复这个生成器
+
+## Python 生成器简介
+
+生成器的基本思想：
+> provide a kind of function that can return
+> an intermediate result ("the next value") to its caller, but maintaining
+> the function's local state so that the function can be resumed again
+> right where it left off.
+
+生成器和迭代器的联系：
+> a Python generator is a kind of Python
+> iterator, but of an especially powerful kind.
+
+## 函数调用栈
+
+你是否想过编程语言（比如 C 语言）是怎样实现 “函数 A 调用函数 B” 的呢？
+函数 A 在调用函数 B 的时候，计算机需要做哪些事情？当函数 B 执行完成之后，
+为什么程序会继续执行函数 A 的逻辑？
+
+我们这样简单地想象一下调用时候的画面（语言表达可能不严谨，仅供脑补）：
+
+1. 计算机执行代码时，会有一个栈，这个栈标记了当前程序执行到什么地方来了
+2. 当计算机执行函数 A 时，计算机会为 A 函数当前的执行环境创建一个 **帧**，
+然后将这个帧 push 到这个栈
+3. 函数 A 中调用了 B 函数时，计算机会为 B 函数创建另外一个 **帧**，
+然后也将这个帧 push 到一个栈中
+4. 当 B 函数执行完的时候，这个帧就会被 pop 出去。这时，计算机又会继续执行
+栈顶的帧，也就是 A 函数剩余部分
+
+问题来了，上面得 **帧** 指什么？**栈** 又是什么？计算机又是怎样执行代码的呢？
+这几个问题，我也不是很懂，但推荐看看 https://www.jianshu.com/p/ea9fc7d2393d 这篇文章。
+（个人感觉有印象就好了，感觉要达到完全理解的程度，可能需要花非常长的时间）。
+
+### Python 函数调用栈
+
+在 Python 中，上面的 **帧** 对应的就是 frame object。
+
+举个栗子：
+
+```python
+import dis
+import inspect
+import traceback
+
+
+def func():
+    frame = inspect.currentframe()
+    print('In function, last frame is ', frame.f_back)
+
+frame = inspect.currentframe()
+print('In main, current frame is', frame)
+print('In main, last frame is ', frame.f_back)
+g = func()
+
+
+# Output:
+#
+# In main, current frame is <frame at 0x1062699f8, file 'f.py', line 12, code <module>>
+# In main, last frame is  None
+# In function, current frame is <frame at 0x1063f7d88, file 'f.py', line 8, code func>
+# In function, last frame is  <frame at 0x1062699f8, file 'f.py', line 14, code <module>>
+```
+
+从输出我们可以看出，当程序执行到 main 函数中时，它当前帧是 `<frame at 0x1062699f8>`，
+它上一个 frame 是 None。当 main 函数调用 func，程序进入 func 函数中时，
+当前帧变成了 `<frame at 0x1063f7d88>`，它的上一个帧是 main 函数对应的帧（大概是这个意思）
+
+## Python 生成器调用栈
+
+```python
+import inspect
+
+
+def func():
+    frame = inspect.currentframe()
+    print('Started, last frame is ', frame.f_back)
+    yield 1
+
+    frame = inspect.currentframe()
+    print('First, last frame is ', frame.f_back)
+
+    yield 2
+    print('Second, last frame is ', frame.f_back)
+
+    yield
+
+
+g = func()
+
+
+def a():
+    global g
+    frame = inspect.currentframe()
+    print('A: frame is', frame)
+    g.send('a')
+
+
+def b():
+    global g
+    frame = inspect.currentframe()
+    print('B: frame is', frame)
+    g.send('b')
+
+
+def main():
+    frame = inspect.currentframe()
+    print('Main: frame is', frame)
+    g.send(None)
+
+    a()
+
+    b()
+
+
+main()
+
+```
+
+Output:
+```
+Main: frame is <frame at 0x7f871e629d28, file 'g.py', line 37, code main>
+Started, last frame is  <frame at 0x7f871e629d28, file 'g.py', line 38, code main>
+A: frame is <frame at 0x10b86e3d8, file 'g.py', line 24, code a>
+First, last frame is  <frame at 0x10b86e3d8, file 'g.py', line 25, code a>
+B: frame is <frame at 0x10b871200, file 'g.py', line 31, code b>
+Second, last frame is  <frame at 0x10b871200, file 'g.py', line 32, code b>
+```
+
+用动画来演示上面这个过程
+
+```
+|      |    |      |    |      |     |  g   |    |      |    |      |
+|      | -> |  g   | -> |      | ->  |  a   | -> |  a   | -> |      | -> ...
+| main |    | main |    | main |     | main |    | main |    | main |
+```
+
+其中，g 在被 pop 的时候，它应该会被保存到某一个地方。
+
+## 小结
+
+我想睡觉了...感觉今晚带着睡意强行记录了一波，唔。
+明天的我不知道能不能看懂这篇 **笔记**。什么时候能写一篇通俗易懂的博客哩？
+很难！
+
+**注**：进程的地址空间不是分为 code、stack、heap 三个区域嘛：
+在 Python 中，所谓的 **frame** 都是保存在堆上，都是由 Python 解释器控制。
+
+之后应该还会写一些笔记：
+
+1. Python 是怎样基于生成器实现了协程？
+2. greenlet 提供的协程和基于生成器的协程在底层有什么区别？
+3. lua 的协程和 Python 的协程又有什么区别与联系？
+
+## 资源
+
+好奇心强的童鞋，详情据说可以阅读（自己都还没读，准备之后看看吧）
+
+- 书籍《Python 源码剖析》
+  - 了解 Python 虚拟机是怎样实现的 -> stack based VM -> registered VM
+  - 了解帧和栈具体是指什么，怎样实现的？
+- [_PyEval_EvalCodeWithName](https://github.com/python/cpython/blob/master/Python/ceval.c#L3685)
+- [Objects/genobject.c](https://github.com/python/cpython/blob/master/Objects/genobject.c)
