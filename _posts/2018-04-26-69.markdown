@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "磨磨生锈的脑袋（持续更新）"
 date: 2018-04-26 15:35:58 +00:00
 permalink: /blogs/69

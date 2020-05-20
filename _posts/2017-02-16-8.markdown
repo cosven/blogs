@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "断点续传（调研笔记篇）"
 date: 2017-02-16 04:33:46 +00:00
 permalink: /blogs/8

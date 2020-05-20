@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "没事看看 pycon 2017 视频"
 date: 2017-05-27 08:10:40 +00:00
 permalink: /blogs/36

@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "试用 KDE - 解决字体渲染问题"
 date: 2018-07-17 17:28:59 +00:00
 permalink: /blogs/73

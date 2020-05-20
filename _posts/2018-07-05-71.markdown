@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "iterable and iterator"
 date: 2018-07-05 15:48:23 +00:00
 permalink: /blogs/71

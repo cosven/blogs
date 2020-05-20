@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "视频一吊糟"
 date: 2017-05-23 03:16:29 +00:00
 permalink: /blogs/34

@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "Linux 桌面环境使用经验"
 date: 2019-04-20 14:33:23 +00:00
 permalink: /blogs/93

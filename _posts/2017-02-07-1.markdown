@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "站点搭建琐事"
 date: 2017-02-07 20:25:43 +00:00
 permalink: /blogs/1

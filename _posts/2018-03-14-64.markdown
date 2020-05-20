@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "博客 markdown 语法支持测试"
 date: 2018-03-14 13:50:50 +00:00
 permalink: /blogs/64

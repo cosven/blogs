@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "feeluown - music player daemon for human?"
 date: 2018-02-17 14:20:53 +00:00
 permalink: /blogs/58

@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "记一次 Python 内存泄漏的排查"
 date: 2017-09-22 09:16:11 +00:00
 permalink: /blogs/54

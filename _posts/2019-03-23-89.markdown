@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "揭开 asyncio 的神秘面纱 - 起初的生成器"
 date: 2019-03-23 04:18:25 +00:00
 permalink: /blogs/89

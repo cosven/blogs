@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "How venv works?"
 date: 2018-01-29 00:19:51 +00:00
 permalink: /blogs/56

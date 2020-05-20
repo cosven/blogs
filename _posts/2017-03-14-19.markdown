@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "《Operating Systems: Three Easy Pieces》 - 读书笔记"
 date: 2017-03-14 16:22:00 +00:00
 permalink: /blogs/19

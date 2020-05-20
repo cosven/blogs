@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "玩迷宫"
 date: 2015-06-27 12:48:36
 permalink: /blogs/60

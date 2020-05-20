@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "Socket FAQ 集锦"
 date: 2019-05-07 12:43:22 +00:00
 permalink: /blogs/95

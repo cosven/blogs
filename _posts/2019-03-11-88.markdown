@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "揭开 asyncio 的神秘面纱 - 协程就是生成器？"
 date: 2019-03-11 11:55:14 +00:00
 permalink: /blogs/88

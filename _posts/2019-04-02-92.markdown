@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "memcached 协议 RFC 阅读笔记"
 date: 2019-04-02 12:51:07 +00:00
 permalink: /blogs/92

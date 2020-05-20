@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "写一个简单的解释器 - 简介以及词法分析"
 date: 2018-10-21 19:03:39 +00:00
 permalink: /blogs/81

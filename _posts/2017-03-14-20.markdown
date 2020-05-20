@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "<代码整洁之道> - 读书笔记"
 date: 2017-03-14 16:42:23 +00:00
 permalink: /blogs/20

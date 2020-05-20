@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "一些基础的网络知识"
 date: 2017-06-20 11:42:34 +00:00
 permalink: /blogs/40

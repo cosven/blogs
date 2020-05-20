@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "本命年回忆"
 date: 2019-01-08 08:41:30 +00:00
 permalink: /blogs/83

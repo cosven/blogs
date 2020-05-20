@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "命令行工具历险记？"
 date: 2017-08-24 09:12:48 +00:00
 permalink: /blogs/50

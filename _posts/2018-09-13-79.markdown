@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "设计一个呆萌的「搜索建议 API」"
 date: 2018-09-13 07:59:52 +00:00
 permalink: /blogs/79

@@ -1,5 +1,4 @@
 ---
-layout: single
 title: "学习 Kubernetes 第一天 - Kubernetes 基础知识学习"
 date: 2018-09-11 12:09:12 +00:00
 permalink: /blogs/77
