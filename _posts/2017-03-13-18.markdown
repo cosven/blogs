@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "2017 日常 TODO 记录"
 date: 2017-03-13 02:00:24 +00:00
 permalink: /blogs/18

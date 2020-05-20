@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "数据结构 - 基础认识"
 date: 2017-09-14 01:21:13 +00:00
 permalink: /blogs/53

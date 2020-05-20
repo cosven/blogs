@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "Linux 桌面环境使用经验"
 date: 2019-04-20 14:33:23 +00:00
 permalink: /blogs/93
@@ -14,7 +14,7 @@ categories: [工具啥的]
 - [试用 KDE - 解决字体渲染问题](http://cosven.me/blogs/73)
 
 ## 系统初始化
- 
+
 
 **配置与脚本**
 

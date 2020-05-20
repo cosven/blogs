@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "没事看看 pycon 2017 视频"
 date: 2017-05-27 08:10:40 +00:00
 permalink: /blogs/36
@@ -35,7 +35,7 @@ tags: [pycon2017]
 2. flexibility (design patterns are missing language features)
 3. safety
 
-### Immutable Programming Writing Functional Python 
+### Immutable Programming Writing Functional Python
 
 感觉不太好玩
 

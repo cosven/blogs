@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "Django 使用笔记"
 date: 2017-03-28 01:52:17 +00:00
 permalink: /blogs/23
@@ -25,12 +25,12 @@ tags: [django]
 
 `Field.null`: If True, Django will store empty values as NULL in the database. Default is False.
 
-`Field.blank`: If True, the field is allowed to be blank. Default is False.  
+`Field.blank`: If True, the field is allowed to be blank. Default is False.
 Note that this is different than null. null is purely database-related, whereas blank is validation-related. If a field has blank=True, form validation will allow entry of an empty value. If a field has blank=False, the field will be required.
 
 #### auto_now vs auto_now_add
 
-`auto_now`: Automatically set the field to now every time the object is saved.   
+`auto_now`: Automatically set the field to now every time the object is saved.
 `auto_now_add`: when created
 
 ### django 测试的坑

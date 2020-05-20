@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "and 替换 all 过程的一些感想"
 date: 2018-06-28 11:54:15 +00:00
 permalink: /blogs/70

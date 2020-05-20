@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "断点续传（调研总结篇）"
 date: 2017-02-20 10:27:15 +00:00
 permalink: /blogs/10
@@ -37,7 +37,7 @@ Dropbox 它没有用 `Content-Range` 和 `Range` 等字段，它自己在 header
 
 ### Baiduyun Solution
 
-百度云的方式比较机智：不是说小文件传起来很方面么，百度云会在你上传小文件成功之后返回给你这个文件的 md5 值。同时它允许你传小文件时带一个参数，标记这个文件为 tmpfile。  
+百度云的方式比较机智：不是说小文件传起来很方面么，百度云会在你上传小文件成功之后返回给你这个文件的 md5 值。同时它允许你传小文件时带一个参数，标记这个文件为 tmpfile。
 然后你要传大文件，是吧？你自己把大文件拆成小文件，然后标记一下这个小文件时 tmpfile，最后再调用一个接口：createSuperfile，在调用的时候需要一个参数：block_list，这个里面放那些小文件的 md5 值。
 
 ### Tus Solution

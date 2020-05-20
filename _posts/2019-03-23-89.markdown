@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "揭开 asyncio 的神秘面纱 - 起初的生成器"
 date: 2019-03-23 04:18:25 +00:00
 permalink: /blogs/89
@@ -46,7 +46,7 @@ for num in fib():
 class Producer:
     def __init__(self):
         self.i, self.j = 0, 1
-        
+
     def gen(self):
         num = self.j
         self.i, self.j = self.j, self.i + self.j
@@ -91,24 +91,24 @@ fib(handle)
 class Producer:
     def __init__(self):
         self.i, self.j = 0, 1
-        
+
     def __iter__(self):
         return self
-        
+
     def __next__(self):
         num = self.j
         self.i, self.j = self.j, self.i + self.j
         if num > 1000:
         	raise StopIteration
         return num
-   
+
 for num in Producer():
     handle(num)
 ```
 
 这就是 Python 迭代器嘛。对！在一开始，生成器的功能定位就是：
 
-> a Python generator is a kind of Python iterator，but of an especially powerful kind. 
+> a Python generator is a kind of Python iterator，but of an especially powerful kind.
 
 为什么说生成器是一种迭代器？Python 判断一个对象是否是迭代器的标准是看这个对象是否遵守**迭代器协议** ，判断一个对象是否遵守迭代器协议主要看两个方面：
 

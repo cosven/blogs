@@ -1,7 +1,7 @@
 ---
-layout: post
+layout: single
 title: "feeluown 阶段性总结"
-date: 2016-09-18 12:48:36 
+date: 2016-09-18 12:48:36
 permalink: /blogs/57
 tags: [python3, feeluown]
 categories: [稍微正经点的]

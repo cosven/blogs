@@ -27,12 +27,47 @@ url: "http://cosven.me" # the base hostname & protocol for your site, e.g. http:
 github_username:  cosven
 
 # Build settings
-theme: minima
+# theme: minimal-mistakes-jekyll
+remote_theme: mmistakes/minimal-mistakes@4.19.2
+repository: "cosven/blogs"
 plugins:
   - jekyll-feed
+  - jekyll-include-cache
 
 disqus:
   shortname: sevenmos
+
+# minima mistake settings
+paginate: 5
+comments:
+  provider: "disqus"
+  disqus:
+    shortname: "sevenmos"
+
+minimal_mistakes_skin: "dirt"
+defaults:
+  # _posts
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: single
+      toc: true
+      comments: true
+      related: true
+
+author:
+  name: "cosven"
+  bio: "努力学习中"
+  avatar: "/assets/images/avatar.jpeg"
+  location: "Hangzhou"
+  links:
+    - label: "GitHub"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/cosven"
+
+include:
+  - _pages
 
 # Exclude from processing.
 # The following items will not be processed, by default.

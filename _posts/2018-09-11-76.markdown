@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "学习 Kubernetes 第二天 -  本地试用 Kubernetes"
 date: 2018-09-11 12:06:48 +00:00
 permalink: /blogs/76

@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "头疼的位运算"
 date: 2018-03-13 13:47:35 +00:00
 permalink: /blogs/61

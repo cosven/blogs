@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "《Operating Systems: Three Easy Pieces》 - 读书笔记"
 date: 2017-03-14 16:22:00 +00:00
 permalink: /blogs/19
@@ -13,19 +13,19 @@ categories: [稍微正经点的]
 
 参考资料：<http://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf>
 
-本来的目的：了解 Round Robin 算法。   
+本来的目的：了解 Round Robin 算法。
 记忆中 `Round Robin` 也是最早出现在进程调度里面的，于是找了本书来看下。如果之后能瞄一眼源代码的话，应该会比较好把。
 
-这一章解决的几个问题：   
+这一章解决的几个问题：
 
 - [ ] How should we develop a basic framework for thinking about scheduling policies?
-  - 确认评价标准？ 
-- [x] What are the key assumptions? 
+  - 确认评价标准？
+- [x] What are the key assumptions?
   - job 一运行就运行到底；job 运行消耗同样的时间
   - job 同时达到
   - job 运行时间已知
   - job 没有 I/O 操作
-- [x] What metrics are important? 
+- [x] What metrics are important?
   - turn around time
   - responde time
 - [x] What basic approaches have been used in the earliest of computer systems?
@@ -33,7 +33,7 @@ categories: [稍微正经点的]
 
 为了避免今天晚上看到太晚，于是决定跳着先看下 Round Robin 这个策略。
 
-turnaround time（知道 job 耗时）: 
+turnaround time（知道 job 耗时）:
 
 - Shortest Job First
 - Shortest Time-to-Completion First (STCF)（job 不是同时达到的）

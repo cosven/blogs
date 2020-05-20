@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "streaming=True 之后发生了什么❓"
 date: 2017-04-21 05:23:33 +00:00
 permalink: /blogs/27

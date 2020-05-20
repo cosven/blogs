@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "学习 Kubernetes 第三天 - Kubernetes API 学习"
 date: 2018-09-12 04:03:30 +00:00
 permalink: /blogs/78

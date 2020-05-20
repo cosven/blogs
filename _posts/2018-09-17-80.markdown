@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "调研 Python 生成器原理时的一些发现"
 date: 2018-09-17 17:52:46 +00:00
 permalink: /blogs/80

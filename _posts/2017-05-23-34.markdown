@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "视频一吊糟"
 date: 2017-05-23 03:16:29 +00:00
 permalink: /blogs/34
@@ -24,14 +24,14 @@ tags: [video, 视频, ffmpeg]
 
 ##### HLS 视频在拖拽时，它需不需要关键帧才能播放？
 
-两篇介绍 ts 分片长度多长合适的文章？   
+两篇介绍 ts 分片长度多长合适的文章？
 
 - https://bitmovin.com/mpeg-dash-hls-segment-length/
 - http://streaminglearningcenter.com/blogs/choosing-the-optimal-segment-duration.html
 
 ##### ts 分片支不支持 range requests ?
 
-> [链接：Q20](https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/StreamingMediaGuide/FrequentlyAskedQuestions/FrequentlyAskedQuestions.html#//apple_ref/doc/uid/TP40008332-CH103-SW1) At least one segment must fully download before it can be viewed by the client, and two may be required to ensure seamless transitions between segments. 
+> [链接：Q20](https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/StreamingMediaGuide/FrequentlyAskedQuestions/FrequentlyAskedQuestions.html#//apple_ref/doc/uid/TP40008332-CH103-SW1) At least one segment must fully download before it can be viewed by the client, and two may be required to ensure seamless transitions between segments.
 
 - 支持视频直播和点播
 - 支持不同分辨率的流，客户端可以根据网络状况切换
@@ -40,15 +40,15 @@ tags: [video, 视频, ffmpeg]
 
 #### 常见的 ffmpeg 的一些命令
 
-**获取视频总的帧数**   
+**获取视频总的帧数**
 `ffprobe -v error -count_frames -select_streams v:0 \
   -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 \
   input.mkv`
-  
-**获取视频 metadata**   
+
+**获取视频 metadata**
 `ffmpeg -i input.mkv`
 
-**视频截图**   
+**视频截图**
 `ffmpeg -ss 00:00:04 -i test.mp4 -vframes 1 -q:v 2 output.jpg`
 
 ##### ffmpeg 中 fps tbr 的区别？

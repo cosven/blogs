@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "算是职业规划调研"
 date: 2019-04-02 09:59:05 +00:00
 permalink: /blogs/91

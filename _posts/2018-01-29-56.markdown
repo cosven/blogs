@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "How venv works?"
 date: 2018-01-29 00:19:51 +00:00
 permalink: /blogs/56
@@ -33,7 +33,7 @@ Python3 的虚拟环境是怎样工作的呢？以前我从来没想过这个问
 
 ```sh
 #code:
- 
+
     rm -rf /tmp/venv_test  # 谨慎使用 rm -rf
     venvPath="/tmp/venv_test/"
     venvBinPath="$venvPath/bin"
@@ -59,7 +59,7 @@ Python3 的虚拟环境是怎样工作的呢？以前我从来没想过这个问
     venvBinPath="$venvPath/bin"
     touch $venvPath/os.py
     "$venvBinPath/python3" -c "import sys; print(sys.prefix)"
-    
+
     venvLibPath="$venvPath/lib/python3.6"
     mkdir -p $venvLibPath
     python3Prefix=$(python3 -c "import sys; print(sys.prefix)")
@@ -86,7 +86,7 @@ lib/python3.6/os.py 这个文件有什么黑魔法么？？请看下文。
 
 既然 Google 搜不到相关问题，我们只能自己动手了。
 
-使用代码搜索工具在 [cpython](https://github.com/python/cpython/) 项目中 grep 一下 os.py，我们可以发现 
+使用代码搜索工具在 [cpython](https://github.com/python/cpython/) 项目中 grep 一下 os.py，我们可以发现
 [Modules/getpath.c](https://github.com/python/cpython/blob/master/Modules/getpath.c) 文件中有相关描述，打开这个文件，我们可以看到文件第一行
 写着『Return the initial module search path』，看起来这东西会影响 Python
 的 import 机制，我们能不能从中找到 encoding 模块 import 失败的原因呢？
@@ -152,7 +152,7 @@ encodings 模块也是理所当然啊。
     rm -rf /tmp/venv_test/lib
     venvPath="/tmp/venv_test"
     venvBinPath="$venvPath/bin"
-    
+
     venvLibPath="$venvPath/lib/python3.6"
     mkdir -p $venvLibPath
     python3Prefix=$(python3 -c "import sys; print(sys.prefix)")
@@ -189,7 +189,7 @@ Python 就可以找到这个模块了，证实了我们上面的推测。
 都有属于该环境的 Python Binary 和一系列包，它和系统中的 Python 共享
 标准库。
 
-由于 Python 以前没有好的内置相关机制支持虚拟环境，所以 virtualnev 
+由于 Python 以前没有好的内置相关机制支持虚拟环境，所以 virtualnev
 等库实现起来都很糟心。就拿 virtualenv 来说，它把所有的标准库都软链接
 到虚拟环境中，还修改了 site 模块。（在上面的实验中，我们也有把 encodings 模块
 软链接到我们的 venv<sub>test</sub> 目录下。）
@@ -217,13 +217,13 @@ Python 的初始模块搜索路径会加上 base<sub>prefix</sub> 对应目录�
 查找机制，都是基于 prefix 这个东西来的。
 
 
-> （最近比较正经（其实是克制自己而言），写这种笔记都不怎么带 yy 了。   
-> （那可不行，在结尾处强行补充一下，不然的话：『这不像你写的呀』    
-> （『这孩纸是不是风格变了？』没有啊啊啊啊。 [see<sub>no</sub><sub>evil]</sub>   
-> （哎，写这东西为啥哩，浪费我周末宝贵的空闲时间啊。另外啊，   
-> （今年还能回家么，一直抢不到票，总不能让我在北京过年把。   
-> （哎，写笔记的时候，忙着。忙完后，感觉也 [心空空](http://music.163.com/#/song?id=458496082) 啊。   
-> （空你个头呀，还不去做早饭，2333。（其实我是来推荐音乐的。2333    
-> （人生大抵如此，无聊的时候，自己找点事情忙碌呗。好玩的事情，就跟   
-> （大家多分享嘛。说的是有道理，你做得到么。。。    
+> （最近比较正经（其实是克制自己而言），写这种笔记都不怎么带 yy 了。
+> （那可不行，在结尾处强行补充一下，不然的话：『这不像你写的呀』
+> （『这孩纸是不是风格变了？』没有啊啊啊啊。 [see<sub>no</sub><sub>evil]</sub>
+> （哎，写这东西为啥哩，浪费我周末宝贵的空闲时间啊。另外啊，
+> （今年还能回家么，一直抢不到票，总不能让我在北京过年把。
+> （哎，写笔记的时候，忙着。忙完后，感觉也 [心空空](http://music.163.com/#/song?id=458496082) 啊。
+> （空你个头呀，还不去做早饭，2333。（其实我是来推荐音乐的。2333
+> （人生大抵如此，无聊的时候，自己找点事情忙碌呗。好玩的事情，就跟
+> （大家多分享嘛。说的是有道理，你做得到么。。。
 > （哎，做个简单的早饭，填个肚子去&#x2026;

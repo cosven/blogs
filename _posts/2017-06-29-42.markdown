@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "关于 PaaS CI/CD 的一些零碎感受"
 date: 2017-06-29 06:43:25 +00:00
 permalink: /blogs/42
@@ -11,5 +11,5 @@ tags: [CI/CD, PaaS]
 
 ## 关于 CI/CD 系统
 
-- `stage`, `step` 这是两个好概念   
+- `stage`, `step` 这是两个好概念
 - 状态机也是个好东西...

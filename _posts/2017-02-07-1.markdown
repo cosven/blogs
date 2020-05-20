@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "站点搭建琐事"
 date: 2017-02-07 20:25:43 +00:00
 permalink: /blogs/1
@@ -20,7 +20,7 @@ utf8mb4 vs utf8 -> utf8mb4 完全兼容 utf8，utf8 支持 emoji ☺️
 
 1. 修改 mysql 配置文件（全局配置）
 
-    
+
         [mysqld]
         character-set-server = utf8mb4
         collation-server = utf8mb4_unicode_ci

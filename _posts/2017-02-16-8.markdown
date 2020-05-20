@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "断点续传（调研笔记篇）"
 date: 2017-02-16 04:33:46 +00:00
 permalink: /blogs/8
@@ -11,8 +11,8 @@ tags: [work, 踩坑, investigation, upload]
 
 ## 一些论断
 
-[第一个](http://stackoverflow.com/questions/20969331/standard-method-for-http-partial-upload-resume-upload) 论断  
-大概是讲：没有标准的 `partial upload, resume upload` 的协议。Google Drive/Dropbox 都有自己的协议。  
+[第一个](http://stackoverflow.com/questions/20969331/standard-method-for-http-partial-upload-resume-upload) 论断
+大概是讲：没有标准的 `partial upload, resume upload` 的协议。Google Drive/Dropbox 都有自己的协议。
 `Content-Range` the wording refers to it as an response header which gets used in response of a range-request.
 
 ### Google Drive APIs - Uploading Files
@@ -24,29 +24,29 @@ tags: [work, 踩坑, investigation, upload]
 - 小文件和文件 metadata 在一个 request 中完成。`multipart upload`
 - 大文件可恢复的上传。`resumable upload`
 
-simple upload 就没啥好讲的了吧，一次性-全部内存操作。  
-multipart upload 就是把 metadata 和文件内容一起上传。（类似邮件内容+附件？  
+simple upload 就没啥好讲的了吧，一次性-全部内存操作。
+multipart upload 就是把 metadata 和文件内容一起上传。（类似邮件内容+附件？
 resumable upload 看起来挺好的，没有黑科技，都是标准的东西，看起来挺人性化的。
 
 #### multipart upload
 
-`POST /upload/drive/v3/files` 用于上传文件  
+`POST /upload/drive/v3/files` 用于上传文件
 `POST /drive/v3/files/` 用于创建或者更新文件的 metadata
 
 原理：use `multipart/related` content type. 问题 `multipart/form-data` 是啥？
 
 ### Dropbox
 
-参考文档：<https://www.dropbox.com/developers/documentation/http/documentation>  
+参考文档：<https://www.dropbox.com/developers/documentation/http/documentation>
 总的来说：Dropbox 的 API 文档的理解难度远高于 Google 的那个呀。
 
-> 阅读文档后的总结：    
+> 阅读文档后的总结：
 > 在 Dropbox 这里，一个大文件分三大步来传：
-> 
+>
 > 1. 首先调接口让 server 知道我要传大文件了，server 返回一个 session_id
 > 2. 下次续传的时候，传一个 offset 和 session_id
 > 3. 传完的时候，调另外一个接口
-> 
+>
 > 关键：使用 `Dropbox-API-Arg` 这个 header 来告诉 server 当前上传的一些信息，比如是在传哪个文件，还有 offset，它的 offset 就是用文件的大小。
 
 #### 策略
@@ -60,8 +60,8 @@ Dropbox 上传有个 Header 叫做 `Dropbox-API-Arg`，值就是一个 json stri
 
 关注三个接口：`/upload_session/start`, `/upload_session/append_v2`, `/upload_session/finish`
 
-start 接口：感觉不需要带什么参数（感觉文档有点问题）。服务端返回一个 session_id 用来续传。  
-append_v2 接口：带上文件内容。Arg 里面指定 session_id 和 offset。如果 offset 错了，会返回一个错误，并告诉你正确的 offset。  
+start 接口：感觉不需要带什么参数（感觉文档有点问题）。服务端返回一个 session_id 用来续传。
+append_v2 接口：带上文件内容。Arg 里面指定 session_id 和 offset。如果 offset 错了，会返回一个错误，并告诉你正确的 offset。
 finish 接口：带上 session id。其它没什么特别的。
 
 ### 百度云
@@ -93,7 +93,7 @@ tus 这个项目竟然没有吹吹自己的 **优势**，也不说说以前的�
 
 #### tus 的 protocol extensions
 
-> Clients and Servers are encouraged to implement as many of the extensions as possible. 
+> Clients and Servers are encouraged to implement as many of the extensions as possible.
 > 惊呆 ?
 
 ##### Creation

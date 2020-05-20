@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "读《关键对话》3-5 章"
 date: 2020-01-18 03:25:38 +00:00
 permalink: /blogs/106

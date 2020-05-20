@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "一个 PyQt 软件的重构笔记（feeluown）"
 date: 2018-04-23 02:43:39 +00:00
 permalink: /blogs/67
@@ -7,7 +7,7 @@ tags: [feeluown, refactor, 重构]
 categories: [稍微正经点的]
 ---
 很多问题以前也遇到过，不用小本本记下来，下次还可能会遇到。
- 
+
 1. 不要直接操作 UI。修改数据，让 UI 随着数据变动（参考 QT Model-View 模式）（似不似和 React 那个啥有点像）
 2. 将音乐资源方封装成 Model，不需要暴露资源方的 API 细节（不要分太多层）
 3. 同一个资源不要分 BriefXxxModel 和 XxxModel 两种（Keep it simple, stupid.）

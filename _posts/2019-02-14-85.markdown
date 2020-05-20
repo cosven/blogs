@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "小白扯淡－用 GDB 调试卡住的 Python 进程"
 date: 2019-02-14 10:08:40 +00:00
 permalink: /blogs/85

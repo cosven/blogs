@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: single
 title: "SQLAlchemy 基础知识 - 认识 session"
 date: 2018-11-08 13:57:28 +00:00
 permalink: /blogs/82
@@ -74,10 +74,10 @@ class User(Base):
 ```python
 # 创建了一个对象，这时，这个对象几乎没有任何意义，session 不知道它的存在
 >>> user = User(name='cosven')
->>> 
+>>>
 # session1.add 这个对象之后，它被 session 放到它的对象池里面去了，但这时不会发送任何 SQL 语句给数据库，数据库目前仍然不知道它的存在
 >>>  session1.add(user)
->>>  
+>>>
 # session1.Query 执行之前，由于 autoflush 是 True，session1 会先执行 session1.flush()，然后再发送查询语句
 # 当 session 进行 flush 操作时，session 会先建立（选）一个和数据库的连接，然后将创建 user 的 SQL 语句发送给数据库
 # 所以，这个查询是能查到 user 的
