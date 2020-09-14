@@ -28,7 +28,7 @@ github_username:  cosven
 
 # Build settings
 # theme: minimal-mistakes-jekyll
-remote_theme: mmistakes/minimal-mistakes@4.19.2
+remote_theme: mmistakes/minimal-mistakes@4.20.2
 repository: "cosven/blogs"
 plugins:
   - jekyll-feed
