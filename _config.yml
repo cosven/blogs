@@ -55,6 +55,8 @@ defaults:
       toc: true
       comments: true
       related: true
+      # read_time: true
+      show_date: true
 
 author:
   name: "cosven"
