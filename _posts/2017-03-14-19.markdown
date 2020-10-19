@@ -1,12 +1,50 @@
 ---
 title: "《Operating Systems: Three Easy Pieces》 - 读书笔记"
-date: 2017-03-14 16:22:00 +00:00
+date: 2020-10-19 16:22:00 +00:00
 permalink: /blogs/19
-tags: [Scheduling, RR, round robin]
+tags: [Scheduling, RR, round robin, OS]
 categories: [稍微正经点的]
 ---
-- [x] 第七章 CPU 调度
 
+- [x] 2020-10-19 第四章 进程
+- [x] 2017-03-14 第七章 CPU 调度
+
+## 进程
+
+进程就是一个运行中的程序。怎样同时运行多个程序？time sharing + context switch + scheduling。
+
+### 进程由什么组成？
+
+看进程的机器状态（machine state）是什么。
+* 内存中有什么？地址空间：进程可以寻址的内存。
+* 寄存器，部分特殊的寄存器，如 program counter(PC, 也称 instruction pointer IP)； 
+  stack pointer，frame pointer
+* 存储设备，I/O information（比如打开的文件列表）等
+
+### 程序怎样变成进程？
+1. 从 disk 到内存
+2. 分配 run-time stack
+3. 堆内存分配？
+4. 初始化 I/O，比如 stdin/stdout/stderr
+
+### 进程状态
+* Running
+* Ready
+* Blocked
+
+Running 和 Ready 可以自由切换；Running 遇到 I/O 变成 Blocked；I/O 完成变成 Ready。
+
+### 进程相关的数据结构
+* process list
+* PCB: process control block, just a structure that contains information about a specific process.
+
+### 常见的相关问题
+top 中显示的 D(disk sleep) 状态：https://stackoverflow.com/a/1475715/4302892。
+在进行 read/write 等系统调用时，进程会进入这个状态。
+
+Sleeping 状态：一个进程需要等待某个资源，进程可以主动进入该状态，也可以是操作系统调度它进入该状态。
+Runnable 状态：一个进程资源都有了，但缺 CPU。
+Stop 状态：比如 zombie（为什么要有 zombie 状态？父进程需要知道子进程的状态）。
 
 ## CPU 调度
 
