@@ -3,6 +3,7 @@ title: 对听歌以及音乐播放器的一些思考（1）
 date: 2021-01-25 22:11:00 +08:00
 permalink: /blogs/10010
 tags: [music, player]
+categories: [音乐]
 ---
 
 **UPDATE 2021-02-13** 嘛耶，刚写这个笔记的时候其实是 2021-01-25，2333。
