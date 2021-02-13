@@ -1,9 +1,11 @@
 ---
-title: 对听歌以及音乐播放器的一些思考
+title: 对听歌以及音乐播放器的一些思考（1）
 date: 2021-01-25 22:11:00 +08:00
 permalink: /blogs/10010
 tags: [music, player]
 ---
+
+**UPDATE 2021-02-13** 嘛耶，刚写这个笔记的时候其实是 2021-01-25，2333。
 
 在写这个笔记之前，给 [FeelUOwn](https://github.com/feeluown/FeelUOwn) 发了个新版本 v3.7。
 上上周和上周发了 v3.7alpha 以及 v3.7beta 版本，但一想到两个版本可能只有我自己一个人用，
@@ -17,7 +19,10 @@ tags: [music, player]
 ### イチカラ村 - 岩田恭明
 最近给我留下最深印象的歌曲是 “イチカラ村 - 岩田恭明”。
 
-<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="750" height="110" loading="lazy" sandbox="allow-popups allow-scripts allow-same-origin" src="https://www.xiami.com/webapp/embed-player?autoPlay=1&id=1802354340"></iframe>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="750" height="110"
+    loading="lazy" sandbox="allow-popups allow-scripts allow-same-origin"
+    src="https://www.xiami.com/webapp/embed-player?autoPlay=1&id=1802354340">
+</iframe>
 
 ```sh
 # 命令行敲这个可以播放
@@ -43,10 +48,35 @@ fuo play fuo://xiami/songs/1802354340
 
 ### 组曲（live） - 刘若英
 
-<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="750" height="110" loading="lazy" sandbox="allow-popups allow-scripts allow-same-origin" src="https://www.xiami.com/webapp/embed-player?autoPlay=1&id=1796387309"></iframe>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="750" height="110"
+    loading="lazy" sandbox="allow-popups allow-scripts allow-same-origin"
+    src="https://www.xiami.com/webapp/embed-player?autoPlay=1&id=1796387309">
+</iframe>
 
 ```sh
 fuo play fuo://xiami/songs/1796387309
 ```
 
-这首“组曲”大约持续半个小时，
+这首“组曲”大约持续半个小时， **UPDATE 2021-02-13** 上次写到了这里，今天接着来。
+它包含的部分歌曲是我以前就熟悉的：“光阴的故事”、“漂洋过海来看你”等。组曲中印象较深的是
+“哭砂”，这首以前没怎么听过，一开始听的时候其实也听不清歌词，只是感觉有一种凄美。
+后来去搜了一下这首音乐的故事 <https://www.zhihu.com/question/21913685> ，
+再听的时候，歌词就很清晰了。尝试搜了原版听，应该是“哭砂-高胜美”，emm，似乎没 rene 唱的这味道，
+rene 版本更加有力、更坚定，更有身临其境的感觉。
+
+这首歌循环了很多次，后来才发现原来这里面几乎都是经典。光陰的故事＋天黑黑＋飄洋過海來看你＋哭砂＋
+把悲傷留給自己＋十分鐘的戀愛＋一代女皇＋永遠不回頭＋夢醒時分＋甲你攬牢牢＋小情歌＋小幸運＋
+k歌之王+向前走＋乾杯+光陰的故事。以前也不觉得小情歌、k歌之王这些歌有多好听 orz。
+
+
+### 周杰伦 2004 无与伦比演唱会
+
+<https://www.bilibili.com/video/BV1bE41127s6>
+
+在看这个演唱会视频之前，也比较喜欢听周杰伦的一些歌曲，晴天、简单爱、半岛铁盒、夜曲、发如雪等，
+但对以父之名这类暗黑歌曲则不太喜欢。但这里演唱会的“以父之名”、“止战之殇”、“梯田”真的刷新了我
+对它们的认识。或许这类歌曲应该配画面食用。非常震撼！
+
+## 结束
+
+隔了两个星期，今天再来补，发现不知道该写些啥了... 就这样吧 ~
