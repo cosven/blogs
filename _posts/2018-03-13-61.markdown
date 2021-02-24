@@ -76,6 +76,6 @@ def get_num(l):
 ### 计算机是什么判断 a>b 的？
 类似问题：计算机判断 a>b 的时候是不是计算 a - b 的值，然后用它和 0 作比较得到的呢？
 
-[https://cs.stackexchange.com/questions/7074/how-does-the-computer-determine-whether-a-number-is-smaller-or-greater-than-anot](参考链接)
+<https://cs.stackexchange.com/questions/7074/how-does-the-computer-determine-whether-a-number-is-smaller-or-greater-than-anot>
 
 看样纸是通过硬件来实现了，不需要计算 a - b 的值。
