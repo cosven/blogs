@@ -1,6 +1,6 @@
 ---
 title: 对听歌以及音乐播放器的一些思考 - （终1）
-date: 2021-02-14 21:40:00 +08:00
+date: 2021-07-20 21:40:00 +08:00
 permalink: /blogs/10013
 tags: [music, player]
 categories: [音乐]
