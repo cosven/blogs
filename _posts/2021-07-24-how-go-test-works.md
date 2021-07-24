@@ -120,7 +120,7 @@ func main() {
 ||end||
 	m := testing.MainStart(testdeps.TestDeps{}, tests, benchmarks, examples)
 ||with .TestMain||
-	{{.Package}}.{{.Name}}(m)
+	||.Package||.||.Name||(m)
 	os.Exit(int(reflect.ValueOf(m).Elem().FieldByName("exitCode").Int()))
 ||else||
 	os.Exit(m.Run())
