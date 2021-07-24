@@ -47,7 +47,7 @@ test
 ### 关键逻辑概览
 
 `runTest` [L579][L579] 下面几行看起来就比较重要。
-```
+```golang
 579 func runTest(...)
 
 599     work.FindExecCmd() // initialize cached result
@@ -108,7 +108,7 @@ b.Do(ctx, root)
 [test main template](https://github.com/golang/go/blob/052da5717e02659da49707873b3868fe36f2aaf0/src/cmd/go/internal/load/test.go#L681-L786)
 
 该 main 的主要逻辑如下
-```golang
+```
 func main() {
 {{if .Cover}}
 	testing.RegisterCover(testing.Cover{
