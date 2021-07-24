@@ -110,21 +110,21 @@ b.Do(ctx, root)
 该 main 的主要逻辑如下
 ```
 func main() {
-{{if .Cover}}
+||if .Cover||
 	testing.RegisterCover(testing.Cover{
 		Mode: {{printf "%q" .Cover.Mode}},
 		Counters: coverCounters,
 		Blocks: coverBlocks,
-		CoveredPackages: {{printf "%q" .Covered}},
+		CoveredPackages: ||printf "%q" .Covered||,
 	})
-{{end}}
+||end||
 	m := testing.MainStart(testdeps.TestDeps{}, tests, benchmarks, examples)
-{{with .TestMain}}
+||with .TestMain||
 	{{.Package}}.{{.Name}}(m)
 	os.Exit(int(reflect.ValueOf(m).Elem().FieldByName("exitCode").Int()))
-{{else}}
+||else||
 	os.Exit(m.Run())
-{{end}}
+||end||
 }
 ```
 
@@ -146,12 +146,13 @@ func main() {
 
 ## 划水
 
-又水了一篇，真好。台风的周末！接下来调研下去青海游玩的计划！
+又水了一篇，真好。台风的周末！
 
-一人听歌，享受、但思绪容易复杂。<br/>
-众人听歌，口味难调。<br/>
-臭味相投不容易。
+接下来调研下去青海游玩的计划！话说有感兴趣的小伙伴咩？
 
+一人听歌，享受，但太容易沉浸，爬不出来就麻烦辽。<br/>
+众人听歌，口味难调，不过新世界也是这样发现滴。<br/>
+微妙！
 
 
 [issue-26289]: https://github.com/pingcap/tidb/issues/26289
