@@ -6,7 +6,6 @@ tags: [music, player, lexer]
 categories: [音乐, 稍微正经点的]
 ---
 
-# 给 FeelUOwn 设计合理的 DSL - 简单考古 shell 的词法分析规则
 
 ## 一点背景
 
