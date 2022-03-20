@@ -22,7 +22,8 @@ categories: [工具啥的]
 
 **字典 - goldendict**
 
-- 在这里下载词典 https://github.com/skywind3000/ECDICT
+- 在这里下载英汉词典 https://github.com/skywind3000/ECDICT 的 release 页面。
+- 这里可以下载汉英词典 https://mdict.org/categories/chinese/ ，这里也包含一些汉语词典。
 - goldendict 在 Plsama 环境下快捷键可能会失效，建议给它设置一个全局快捷键。
   全局快捷键运行 goldendict，让它弹窗。弹窗时，可能会弹出 menu bar，一个 workaround 是隐藏它。
   https://github.com/goldendict/goldendict/issues/739
