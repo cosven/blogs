@@ -9,36 +9,26 @@ categories: [工具啥的]
 
 ## 系统初始化
 
-**配置与脚本**
+初始化流程大致如下
 
-- rcfiles `git clone git@github.com:cosven/rcfiles.git`
-- Emacs `git clone git@github.com:cosven/.emacs.d.git`
+1. 下载这两个 repo，其中 rcfiles 为必须品
+   - rcfiles `git clone https://github.com:cosven/rcfiles.git`
+   - Emacs `git clone https://github.com:cosven/.emacs.d.git`
+2. 配置 clash 服务
+3. 安装 dropbox，提取 ssh 密钥
+4. 安装输入法 fcitx
+5. 其它必须软件：chrome, telegram, konsole
 
-**字典 - goldendict**
+## 配置 clash 服务
 
-- 在这里下载英汉词典 https://github.com/skywind3000/ECDICT 的 release 页面。
-- 这里可以下载汉英词典 https://mdict.org/categories/chinese/ ，这里也包含一些汉语词典。
-- goldendict 在 Plsama 环境下快捷键可能会失效，建议给它设置一个全局快捷键。
-  全局快捷键运行 goldendict，让它弹窗。弹窗时，可能会弹出 menu bar，一个 workaround 是隐藏它。
-  https://github.com/goldendict/goldendict/issues/739
+目前看到的最佳实践是把 clash 做成 systemd 的服务，clash.service 文件可以参考 rcfiles。
+直接从 rcfiles 中软链到 `~/.config/systemd/user/`，然后 `systemctl --user daemon-reload`，
+然后 enable 一下这个服务即可。
 
-另外，在浏览器上安装 Google Translate 插件。
-
-**输入法 - fcitx + Google Pinyin**
-
-- 开机后第一次使用，打字时可能会看不到 popup，重启一下 fcitx 即可
-
-**Shadowsocks-qt5**
-
-去[这个页面](https://github.com/shadowsocks/shadowsocks-qt5/releases) 下载一个 AppImage
-
-然后使用 `--appimage-extract` 指令解压出 desktop 和 icon 文件，自己编辑一下 desktop 文件，
-放到 `~/.local/share/applications/`。
-
-浏览器上装个 SwitchOmega 插件，bypass list 文件参考： https://gist.github.com/cosven/db4fd74af4ceb5125969cefb970c2fce
-
-**离线文档 - zeal（可选）**
-
+需要注意的是 clash 的配置文件，一般来说 clash 的配置文件可以直接从服务提供商下载，
+基本上不需要改它的配置。port 以及 external-ui 可能需要小改一下。
+ui 文件可以下载 clash-dashboard 的 gh-pages 上下载，git clone master 似乎不行。
+clash 运行的 cwd 可能是 home 目录，因此配置的时候最好把路径写全。避免折腾。
 
 ## 软件对比
 
@@ -68,7 +58,7 @@ _UPDATE 2019-4-23_: Chromium 内置了 KDE wallet 的支持，disable 它，就�
 
 用 [flameshot](https://github.com/lupoDharkael/flameshot) 可以达到类似 wechat/qq 截图那样的效果
 
-## 快捷键
+## 快捷键设置
 
 - Alt-F2 在 KDE 下是唤起 Plasma Search。在 GNOME 下是运行命令。
 
@@ -92,6 +82,18 @@ _UPDATE 2019-4-23_: Chromium 内置了 KDE wallet 的支持，disable 它，就�
 调研并实践后，发现[用 systemd user 启动 ssh-agent][systemd-ssh-agent]这个方案是最靠谱。
 其他对比方案
 1. 在 KDE 上尝试过 walletd。不好用，一方面配置很麻烦；另一方面，一些相搭配的组件 envoy 已经不维护了。
+
+## 翻译软件
+
+以前感觉 goldendict 不错，但现在基本上都处于有网的环境，浏览器的“划词翻译”这款插件感觉很不错。
+
+### 字典 - goldendict
+
+- 在这里下载英汉词典 https://github.com/skywind3000/ECDICT 的 release 页面。
+- 这里可以下载汉英词典 https://mdict.org/categories/chinese/ ，这里也包含一些汉语词典。
+- goldendict 在 Plsama 环境下快捷键可能会失效，建议给它设置一个全局快捷键。
+  全局快捷键运行 goldendict，让它弹窗。弹窗时，可能会弹出 menu bar，一个 workaround 是隐藏它。
+  https://github.com/goldendict/goldendict/issues/739
 
 ## KDE 上的字体问题
 
@@ -174,12 +176,11 @@ Konsole 也就正常了。
 
 
 ## 其它常见问题
-
-**突如其来的高 CPU**
+### 突如其来的高 CPU
 
 1. 检查 chrome 页面是否有动画、gif 等（其实还包括 Slack 等一些基于 webkit 的应用）
 
-**不能完全睡眠**
+### 不能完全睡眠
 
 （不确定下面这个方案是否真的可行，目前看似乎可以）
 参考这个 https://wiki.archlinux.org/index.php/Mac#Wake_Up_After_Suspend
@@ -189,5 +190,26 @@ Konsole 也就正常了。
 
 注：还有的人猜测是 USB 导致的，也有人猜测是鼠标导致的，我感觉把这些全部设置为 disable 就好了。
 
+### Chrome 播放声音卡顿
+
+这种方法，亲测可以解决。据说还可以通常杀掉 chrome 的 Utilities Audio 进程来解决。
+```
+pulseaudio -k
+pulseaudio --start
+```
 
 [systemd-ssh-agent]: https://wiki.archlinux.org/title/SSH_keys_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#%E7%94%A8_systemd_user_%E5%90%AF%E5%8A%A8_ssh-agent)
+
+### GRUB 引导被破坏
+我自己遇到过了 windows 大更新把 grub 引导搞坏了问题，这个问题 arch 社区说经常会遇到。
+我猜测是因为 windows 更新时，在自己的分区范围内，又搞了个新分区 windows recovery ，
+导致 grub 找不到正确的分区了 🤔。瞎猜一下，如果 linux 的分区排在 windows 分区的前面，
+或许可以规避这个问题。不过好在是直接进入 grub rescue 页面，修复起来还是挺快的。
+
+大概就是以下几条命令吧
+```
+ls (hd0,gpt5)  # 先试试 linux 安装在哪个分区上
+set root=(hd0,gptN)/
+insmod normal
+normal
+```
