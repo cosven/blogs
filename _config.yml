@@ -18,7 +18,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: 笑一笑，十年少
+title: cosven
 email: yinshaowen241@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   待补充。
@@ -28,7 +28,7 @@ github_username:  cosven
 
 # Build settings
 # theme: minimal-mistakes-jekyll
-remote_theme: mmistakes/minimal-mistakes@4.20.2
+remote_theme: mmistakes/minimal-mistakes@4.24.0
 repository: "cosven/blogs"
 plugins:
   - jekyll-feed
@@ -60,7 +60,7 @@ defaults:
 
 author:
   name: "cosven"
-  bio: "努力学习中"
+  bio: "笑一笑，十年少"
   avatar: "/assets/images/avatar.jpeg"
   location: "Hangzhou"
   links:
