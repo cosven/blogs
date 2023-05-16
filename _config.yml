@@ -44,7 +44,8 @@ comments:
   disqus:
     shortname: "sevenmos"
 
-minimal_mistakes_skin: "dirt"
+# minimal_mistakes_skin: "dirt"
+minimal_mistakes_skin: "default"
 defaults:
   # _posts
   - scope:
@@ -52,10 +53,12 @@ defaults:
       type: posts
     values:
       layout: single
+      classes: wide
       toc: true
       comments: true
       related: true
-      # read_time: true
+      read_time: true
+      share: true
       show_date: true
 
 author:
