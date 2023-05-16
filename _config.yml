@@ -56,10 +56,15 @@ defaults:
       classes: wide
       toc: true
       comments: true
-      related: true
-      read_time: true
-      share: true
+      # Since disqus alredy show related posts.
+      # related: true
+      # Read time is too inaccurate.
+      # read_time: true
+      # Can only share on twitter,facebook,linkedin.
+      # share: true
       show_date: true
+      # To make the left side not so empty.
+      author_profile: true
 
 author:
   name: "cosven"
