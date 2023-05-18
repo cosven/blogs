@@ -53,8 +53,9 @@ defaults:
       type: posts
     values:
       layout: single
-      classes: wide
+      # classes: wide
       toc: true
+      toc_sticky: true
       comments: true
       # Since disqus alredy show related posts.
       # related: true
