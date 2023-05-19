@@ -53,7 +53,7 @@ defaults:
       type: posts
     values:
       layout: single
-      classes: wide
+      # classes: wide
       toc: true
       toc_sticky: true
       comments: true
@@ -65,7 +65,7 @@ defaults:
       # share: true
       show_date: true
       # To make the left side not so empty.
-      author_profile: true
+      # author_profile: true
 
 author:
   name: "cosven"
