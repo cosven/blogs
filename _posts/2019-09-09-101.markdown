@@ -2,7 +2,7 @@
 title: "Paper Reading: What Bugs Live in the Cloud? A Study of 3000+ Issues in Cloud Systems"
 date: 2019-09-09 15:26:04 +00:00
 permalink: /blogs/101
-tags: [reading, paper]
+tags: [reading]
 categories: [稍微正经点的]
 ---
 ## 读后感

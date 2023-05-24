@@ -2,7 +2,7 @@
 title: "读《关键对话》3-5 章"
 date: 2020-01-18 03:25:38 +00:00
 permalink: /blogs/106
-tags: [reading, 关键对话, 非技术]
+tags: [reading, 关键对话]
 categories: [阅读]
 ---
 最近在读了一本书《关键对话》，它的副标题是“如何高效能沟通”。

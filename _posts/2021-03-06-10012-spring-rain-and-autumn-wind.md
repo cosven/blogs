@@ -2,7 +2,7 @@
 title: 春雨与秋风
 date: 2021-03-06 08:35:00 +08:00
 permalink: /blogs/10012
-tags: [life, nature]
+tags: [life]
 categories: [life]
 ---
 

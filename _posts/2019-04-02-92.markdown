@@ -2,7 +2,7 @@
 title: "memcached 协议 RFC 阅读笔记"
 date: 2019-04-02 12:51:07 +00:00
 permalink: /blogs/92
-tags: [memcached, tcp, protocol]
+tags: [memcached, protocol]
 categories: [稍微正经点的]
 ---
 阅读这个 RFC 可能的收获：自己设计协议可以参考

@@ -2,7 +2,7 @@
 title: "记一次 Python 内存泄漏的排查"
 date: 2017-09-22 09:16:11 +00:00
 permalink: /blogs/54
-tags: [python, memory leak, 内存泄漏]
+tags: [python, memory, debug]
 categories: [稍微正经点的]
 ---
 最近在迁移一个视频服务的断点上传部分。这货之前使用 django 写的，要迁移到一个 tornado 框架。

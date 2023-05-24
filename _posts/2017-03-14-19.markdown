@@ -2,8 +2,8 @@
 title: "《Operating Systems: Three Easy Pieces》 - 读书笔记"
 date: 2020-10-19 16:22:00 +00:00
 permalink: /blogs/19
-tags: [Scheduling, RR, round robin, OS]
-categories: [稍微正经点的]
+tags: ["Operating System"]
+categories: [阅读]
 ---
 
 - [x] 2020-10-19 第四章 进程
@@ -17,7 +17,7 @@ categories: [稍微正经点的]
 
 看进程的机器状态（machine state）是什么。
 * 内存中有什么？地址空间：进程可以寻址的内存。
-* 寄存器，部分特殊的寄存器，如 program counter(PC, 也称 instruction pointer IP)； 
+* 寄存器，部分特殊的寄存器，如 program counter(PC, 也称 instruction pointer IP)；
   stack pointer，frame pointer
 * 存储设备，I/O information（比如打开的文件列表）等
 

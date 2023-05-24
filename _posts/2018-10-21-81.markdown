@@ -2,7 +2,7 @@
 title: "写一个简单的解释器 - 简介以及词法分析"
 date: 2018-10-21 19:03:39 +00:00
 permalink: /blogs/81
-tags: [python, interpreter, lexical analysis, 词法分析, 解释器, lexer]
+tags: [python, 词法分析, 解释器, lexer]
 categories: [稍微正经点的]
 ---
 编程语言一直是民间讨论的热点话题之一，国庆的时候自己按照教程做了一个简陋版的“解释器”，

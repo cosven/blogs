@@ -2,7 +2,7 @@
 title: "Socket FAQ 集锦"
 date: 2019-05-07 12:43:22 +00:00
 permalink: /blogs/95
-tags: [socket, TCP/IP, networking]
+tags: [networking]
 categories: [稍微正经点的]
 ---
 参考网上各大博客或者 RFC 以解决自己对 Socket 编程或者说 TCP/IP 协议的众多疑问。

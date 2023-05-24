@@ -2,7 +2,7 @@
 title: "关于面试和被面试"
 date: 2019-10-15 06:59:47 +00:00
 permalink: /blogs/102
-tags: [interview, tech]
+tags: [interview]
 ---
 目前这篇文章还比较水，主要是记录了自己之前面试时的一些准备。
 

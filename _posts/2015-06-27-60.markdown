@@ -2,7 +2,7 @@
 title: "玩迷宫"
 date: 2015-06-27 12:48:36
 permalink: /blogs/60
-tags: [python, dfs, bfs, 迷宫]
+tags: [python, algorithm]
 categories: [稍微正经点的]
 ---
 ## 迷宫自动生成

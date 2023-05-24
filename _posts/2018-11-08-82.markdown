@@ -2,7 +2,7 @@
 title: "SQLAlchemy 基础知识 - 认识 session"
 date: 2018-11-08 13:57:28 +00:00
 permalink: /blogs/82
-tags: [flask, sqlalchemy, basics]
+tags: [flask, sqlalchemy]
 categories: [稍微正经点的]
 ---
 这篇文章致力于解决以下疑问（本文以 MySQL 为例）：

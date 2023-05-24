@@ -2,7 +2,7 @@
 title: "How collections.deque works?"
 date: 2019-04-23 14:02:11 +00:00
 permalink: /blogs/94
-tags: [python, linked list, LRUCache]
+tags: [python, data structure, algorithm]
 categories: [稍微正经点的]
 ---
 前言：在 Python 生态中，我们经常使用 collections.deque

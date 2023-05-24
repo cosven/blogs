@@ -2,7 +2,7 @@
 title: "设计一个呆萌的「搜索建议 API」"
 date: 2018-09-13 07:59:52 +00:00
 permalink: /blogs/79
-tags: [API, mysql, search]
+tags: [API, mysql]
 ---
 最近在实现一个内部系统的搜索功能，我们这个内部系统是一个运维平台，
 功能和 Google Cloud Engine 的控制台特别相似。

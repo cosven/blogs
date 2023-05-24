@@ -2,7 +2,7 @@
 title: "揭开 asyncio 的神秘面纱 - 起初的生成器"
 date: 2019-03-23 04:18:25 +00:00
 permalink: /blogs/89
-tags: [iterator, asyncio, generator]
+tags: [Python, asyncio]
 categories: [稍微正经点的]
 ---
 上篇文章中，我们说到：Python 的协程底层就是基于生成器来实现的。本文，我们会讲生成器的一些历史和相关的基础知识。

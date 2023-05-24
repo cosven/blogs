@@ -2,7 +2,7 @@
 title: "断点续传（调研总结篇）"
 date: 2017-02-20 10:27:15 +00:00
 permalink: /blogs/10
-tags: [resumable upload]
+tags: [http, networking]
 categories: [稍微正经点的]
 ---
 # 断点续传

@@ -2,7 +2,7 @@
 title: "Python Packaging 一些阅读笔记"
 date: 2018-04-23 07:41:10 +00:00
 permalink: /blogs/68
-tags: [notes, 笔记, python packaging, wheel, egg]
+tags: [python, packaging]
 categories: [稍微正经点的]
 ---
 # Python Packaging
