@@ -1,6 +1,6 @@
 ---
 title: "读《Operating Systems: Three Easy Pieces》"
-date: 2023-05-29 14:00:00 +00:00
+date: 2023-05-29 14:00:00 +08:00
 permalink: /blogs/19
 tags: ["Operating System"]
 categories: [阅读]
