@@ -170,5 +170,16 @@ algorithm
 
 ### [WIP] 空闲空间管理（Free-Space Management）
 
+这一章主要是讲内存分配这个主题，其中又侧重 free-sapce management 这个问题点,
+这个问题的一个核心子问题就是外部碎片问题（external fragmentation）。
+
+讨论是从研究用户态内存分配器入手，讨论时先忽略内部碎片这个问题。
+讨论的另外一个重要假设是分配出去的内存不会被迁移到其它地方，也不会对
+free-space 进行 compaction 这样的操作。还假设分配的内存是一个连续的、
+固定大小的区域。
+
+介绍了底层的一些机制（也就是内存分配频繁涉及的一些概念和策略）：
+1. Splitting and Coalescing（free list 的分裂和合并）。以满足内存申请需求。
+2.
 
 [rocksdb-valgrind-issue]: https://github.com/facebook/rocksdb/issues/9066
