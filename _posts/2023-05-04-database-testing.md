@@ -205,6 +205,9 @@ QA 全称是质量保证（Quality Assurance），不管是 QA 或是测试这�
    4. tracing：问题定位？包括性能以及稳定性。
 
 ### 量化！大家都开心
+### 发散性思维？？？
+
+https://mm.tt/map/2794311618?t=3qGwT0nC5C
 
 ## 带着故事睡觉
 

@@ -168,18 +168,110 @@ and returns the one closest in size that satisfies the desired allocation to
 the requester), worst-fit, first-fit, and more complex schemes like buddy
 algorithm
 
-### [WIP] 空闲空间管理（Free-Space Management）
+### 空闲空间管理（Free-Space Management）
 
 这一章主要是讲内存分配这个主题，其中又侧重 free-sapce management 这个问题点,
 这个问题的一个核心子问题就是外部碎片问题（external fragmentation）。
+讲了内存分配需要考虑哪几个基本问题，然后又介绍了几种简单的策略帮助读者理解这个问题，
+然后又介绍了几种实践中用到的策略。最后总结，主要从效率和空间浪费两个角度来考虑这个问题，
+不同的负载下，有不同的最佳策略，是一个利弊权衡的过程。
 
 讨论是从研究用户态内存分配器入手，讨论时先忽略内部碎片这个问题。
 讨论的另外一个重要假设是分配出去的内存不会被迁移到其它地方，也不会对
 free-space 进行 compaction 这样的操作。还假设分配的内存是一个连续的、
 固定大小的区域。
 
-介绍了底层的一些机制（也就是内存分配频繁涉及的一些概念和策略）：
+介绍了底层的一些机制（也就是内存分配频繁涉及的一些问题和策略）：
 1. Splitting and Coalescing（free list 的分裂和合并）。以满足内存申请需求。
-2.
+2. Tracking The Size Of Allocated Regions。free 接口接受的参数是一个指针，
+   allocator 需要知道指向的内存块的大小。一个常见的实现办法是划分一个 header
+   来存储这个大小的信息。(RocksDB 就是依赖这种办法来统计 block 大小的。)
+3. Embedding A Free List。大意是这个“空闲空间管理”的数据结构本身也要占内存，
+   怎样存储它是一个常见问题：而常见方式是在头部存链表的 head 节点。
+4. Growing The Heap。一种常见实现是应用调用 sbrk 系统调用，
+   操作系统会把一些空闲的 page 分配给它（物理上不一定是连续的，进程看到的是连续的）。
+
+空闲空间的几种常见管理策略
+1. best fit：空间浪费少，但搜索效率低。
+2. worst fit: ？找一个空间最大的块，仍然是全局搜索。
+3. first fit: 。
+4. next fit：每次搜索完，记录指针所在位置，下次搜索是上次的位置继续。
+
+书中说这几种策略只是非常初级的策略，实际会更复杂。这几种只是让读者有个印象。
+后面又列了一些实际应用的一些（优化）策略：
+1. Segregated Lists。大概意思是把空闲空间分几个链表来管理，
+   每个链表管理的空闲空间大小都是一样的，比如都是 8Byte/16Byte。
+   这样在效率和空间两方面都不错。书中举了 `slab allocator` 这个例子。
+2. Buddy Allocator。考虑到 Coalescing 这个操作对分配器来说是非常重要的，
+   举的例子是 `binary buddy allocator`。
+3. 其它：使用一些平衡二叉树等数据结构来保存空闲空间，提升搜索效率。
+
+### Paging: Introduction
+
+这一章我只是粗略的看了下，它主要介绍了 paging 这个思想，操作系统是如何实现这种策略的。
+操作系统把物理内存分成大小相同的页（**page**），用户态的分配器来申请内存的时候，
+也是申请一页或者多页。每个进程会有一个 **page table** 来保存虚拟地址和物理地址的映射。
+page table 这个东西设计时又需要考虑几个因素：效率和空间占用。后面两章会讲一个高效的
+paging 实现是怎样的。
+
+这里面说了几个概念
+1. Instead of splitting up a process’s address space into some number of
+   variable-sized logical segments (e.g., code, heap, stack), we divide
+   it into fixed-sized units, each of which we call a **page**.
+2. we view physical memory as an array of fixed-sized slots called
+   **page frames**, each of these frames can contain a single
+   virtual-memory page.
+2. physical frame number (PFN)
+2. physical page number or PPN
+3. Page Table Entry (PTE): page table 由众多 entry 组成，一个 entry
+   里面不仅会由虚实的映射，还有有一些 flag,比如这个 page 是否脏了，读写权限等。
+
+### Paging: Faster Translations (TLBs)
+
+这一章看的也比较粗略，它主要介绍了 TLB 的作用和具体实现。也简介了 TLB 的不足。
+后续有需求的话，其实可以再细致的看一下。
+
+注：这个问题也是从两个角度出发：OS 角度和硬件角度。上面提到的很多问题都是从这两个角度来思考。
+
+TLB 算法简述：算法的输入是虚拟地址，输出是物理内存地址。TLB 接收到请求时，
+如果发现虚拟地址对应的 TlbEntry 在缓存里，直接返回
+（返回前还会判断一下这个 TlbEntry 的一些状态，比如 ProtectBits 的值）。
+如果不在缓存，算一下，然后加载到缓存，然后走类似的返回逻辑。
+传统的 x86 架构的 TLB 是一个硬件单元，一些现代的新架构，如 RISC
+可以在软件层面来管理 TLB。
+
+这种缓存在很多场景都非常有用，比如遍历一个数组。原因在于其空间局部性（spatial locality）。
+
+重要概念
+1. TLB: translation-lookaside buffer。这个名字有一些历史原因，叫做
+   address-translation cache 更形象。它也是 MMU 的一部分。
+2. TLB hit/miss：缓存就会有 hit 和 miss，很合理。
+3. locality：There are usually two types of locality: temporal locality
+   and spatial locality. With temporal locality, the idea is that an
+   instruction or data item that has been recently accessed will likely
+   be re-accessed soon in the future.
+
+### Paging: Smaller Tables
+
+粗略的读这一章，这一章主要介绍了几种 page table 的优化方案（对于特定场景来说）
+1. Bigger Pages：这种思想的一个问题在于会加重 internal fragmentation 问题。
+2. Hybrid Approach: Paging and Segments。Hybird 的方法在均衡两者优劣的背景下，
+   通常还会给逻辑处理引入复杂度。
+3. Multi-level Page Tables： 想象一下，把 page 分几个字文件夹（page directory）。
+4. Inverted Page Tables: 只存一个 page table, 然后在这个 page table
+   上记录一个 page 被哪些进程使用。
+5. Swapping the Page Tables to Disk。
+
+
+### 跳过剩下的3个章节
+
+越后面的章节，内容越细，也就是说，用到的概率越小了。我自己暂时还没有产生这方面的疑问，
+阅读的效率可能比较低，遂先跳过。但不得不说的是，计算机很多问题的本质都是相似的，
+比如缓存；空间换时间；两种方法混合（均衡优劣）；分段和分页思想。我想，
+以后应该还会遇到这种问题，到时候再来看应该能有新的收获。
+
+1. Swapping：Mechanisms
+2. Swapping：Polices
+3. Complete VM Systems：介绍了 Linux 的 VM system 是怎么实现的，先跳过，嘻嘻。
 
 [rocksdb-valgrind-issue]: https://github.com/facebook/rocksdb/issues/9066
