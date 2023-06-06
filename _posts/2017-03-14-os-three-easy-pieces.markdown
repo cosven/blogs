@@ -18,7 +18,7 @@ categories: [阅读]
 - [x] 内存虚拟化(第12-24章)
 - [ ] 并发
 - [-] 持久化
-  - [x] 2023-06-06 第36章 I/O 设备
+  - [x] 2023-06-06 第36-37章
 
 ## 虚拟化（CPU）
 ### 进程
@@ -280,10 +280,14 @@ TLB 算法简述：算法的输入是虚拟地址，输出是物理内存地址�
 [rocksdb-valgrind-issue]: https://github.com/facebook/rocksdb/issues/9066
 
 ## 持久化（Persistence）
-
 ### I/O 设备
 
 这一章回答的关键问题是：怎样把 I/O 集成到系统中。
+
+> 读完之后，尝试回答一下这个问题：I/O 设备先通过 SATA/PCI-E 口连接到主板。
+> 这些设备会提供一些接口，简单一点的比如几个寄存器，操作系统通过读写这几个寄存器，
+> 来完成和设备之间的数据传输及控制。为了提升性能，设备本身可能还有一些优化，
+> 比如磁盘设备会通过 DMA 技术来降低数据拷贝时的 CPU 消耗。
 
 从系统架构角度看：书中提到一个点，高性能的 I/O 设备通过一个通用的 **I/O bus** 来连接，
 在现代系统中通常对应 PCI。低性能的设备通过 **peripheral bus** 来连接，比如 SCSI, SATA
@@ -305,3 +309,43 @@ DMA（Direct Memory Access） 这种办法可以用来解决这一问题。
 
 设备驱动（device driver）：让设备可以与操作系统以最优的方式进行数据传输。
 这里有一个案例学习，一个简单的 IDE Disk Driver。
+
+### 硬盘驱动（Hard Disk Drives）
+
+这一章解决的关键问题是：怎样从磁盘读写数据？
+
+> 这一章更多的其实是讲怎样高效的读写。因此介绍了磁盘的结构，磁盘需要旋转和seek,
+> 这两个操作非常耗时，它是一切问题的根源。当下，我们常说随机读写和顺序读写，
+> 本质也是这个问题。除此之外，操作系统也设计了一些调度算法来优化读写的延迟，电梯算法。
+
+磁盘对操作系统提供的接口：由很多扇区（sector，512-byte block）组成，每个扇区都可以读写。
+类似 paging。单个扇区的写入是原子的（atomic），多个扇区写入可能会由于断电而引起写入不完整
+（torn write）。磁盘顺序读写比随机读写性能更好。
+
+磁盘结构中的一些主要概念：磁盘臂（disk arm）；磁头（disk head）；轨道（track）；
+盘片（platter）；缓存（track buffer，cache）；write back caching （写到 cache 即算完成）；
+write through（写到磁盘才算完成）等等。
+
+一个简单的磁盘驱动器：介绍了几个响应时间。盘片转动的时间（rotation delay），
+磁盘臂寻找轨道的时间（seek time，>=0.5~2ms）
+
+I/O 延迟计算：T(I/O) = T(seek) + T(rotation) + T(transfer)。
+一个磁盘卖的时候，参数里面一般会包括 average seek time, RPM, 带宽。
+通过这几个参数，可以基本计算出随机读的延迟。
+
+磁盘调度：几中调度算法
+1. SSTF(shortest seek time first，也叫 shortest-seek-first SSF)。
+   这种有几个不足：seek 时间只能估算，操作系统没有准确值；还有一个是常见问题，饥饿。
+   操作系统能准确知道的是这个数据在哪个 block。
+2. 电梯算法（SCAN, 也叫 C-SCAN）。简单理解就是：在上升过程中（上下对应磁盘里外），
+   只处理顺路的请求，不顺路的等下降的时候再处理。这种算法有些许变种，常见的一个是
+   C-SCAN（Circular SCAN），它总是从外到里处理。书中它的好处是更加公平，
+   因为本来的算法对处于中间位置的请求更有利（我理解它说的可能是最坏时间吧）。
+   电梯算法解决了饥饿问题。不过电梯算法没有考虑 seek/rotation 的成本。
+3. SPTF(Shortest Positioning Time First)：考虑了 seek/rotation 成本的算法。
+   这种算法常被用于驱动中，因为操作系统往往对这些硬件的内部结构细节不够了解。
+
+其它调度：I/O merging, work-conserving/non-work-conserving。
+
+### RAIDs
+这一章的核心问题是：怎样创造一个大、快、可靠的磁盘。跳过。
