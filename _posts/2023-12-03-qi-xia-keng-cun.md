@@ -14,7 +14,7 @@ categories: [life]
     <figcaption>盗图两张</figcaption>
 </figure>
 
-<figure class="three">
+<figure class="third">
     <img src="https://github.com/cosven/blogs/assets/4962134/2f075656-6eec-4403-a09a-c96268cfd1cf">
     <img src="https://github.com/cosven/blogs/assets/4962134/c46ff5c5-c371-46d7-a7fe-fb7d393d490c">
     <img src="https://github.com/cosven/blogs/assets/4962134/0969ac65-120d-4e1a-a99c-db7f3b2fb7ff">
