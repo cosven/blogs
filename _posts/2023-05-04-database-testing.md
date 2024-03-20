@@ -9,6 +9,7 @@ categories: [稍微正经点的]
 4年前，我对分布式、数据库、测试这几个领域都很陌生，好奇心与缘分让我和它们相见。
 它们每一个都有说不完的故事。而我和它们的故事，则要从测试开始说起。
 
+- 2024-03-21: 读《关于产品质量的思考 – 如何评估质量》有感
 - 2023-05-31: 补充“分层测试”这一章。
 - 2023-05-25: 补充了测试的一些其它角度：理念与流程、DFX 专业技能。
 - ps: 后续可以注意看这篇博客的 TODO 标记。
@@ -43,6 +44,13 @@ QA 全称是质量保证（Quality Assurance），不管是 QA 或是测试这�
 等指标又存在“全集难以计算”或“提升成本很高”等问题。对于一个讲究“快速迭代”的行业，
 产品问题数则和用户数、新特性数量、以及用户使用场景/时长有明显相关性，
 同比环比等计算策略在这样的情况下同样无法使用。
+
+2024-03-21 更新：[唐刘：关于产品质量的思考 – 如何评估质量][tl-thinking-about-product-quality]
+这篇文章里面提到了几种评估质量的维度：
+1. bug 维度：漏出去的 bug 数量；bug 收敛趋势，算法是：新修复-新发现；
+   bug 趋向于聚集，这个观点在《软件测试的艺术》这本书也说过。
+2. feature 维度：个人理解讲的就是要保证在质量方面上的花的时间。
+3. 文章还提到了客户场景的测试覆盖。可以理解为 test 角度。
 
 回到 QA 的话题，假设质量好坏能量化，其能反应 QA 工作的好坏么？显然也不能。
 举个例子，某个模块质量变好了，完全可能是因为代码换了一位“牛人”来写，鲁棒性更好了。
@@ -246,3 +254,4 @@ MindMeister，建议不要用！！！还是自己写个文字版吧。
 [notes-about-qa]: https://github.com/cosven/database-testing#%E5%85%B3%E4%BA%8E-qa-%E8%BF%99%E4%B8%AA%E5%B2%97%E4%BD%8D
 [max-blog-1]: https://cn.pingcap.com/blog/distributed-system-test-1
 [gc-in-c-f]: https://docs.pingcap.com/zh/tidb/dev/garbage-collection-configuration#gc-in-compaction-filter-%E6%9C%BA%E5%88%B6
+[tl-thinking-about-product-quality]: https://cn.pingcap.com/blog/how-to-evaluate-product-quality
