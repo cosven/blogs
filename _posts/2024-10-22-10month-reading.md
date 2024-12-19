@@ -8,19 +8,13 @@ categories: [阅读]
 
 强行记一点，养成好习惯！
 
-## aider-chat
+## AI 编辑器
 
-一直想近距离的接触一个 AI 项目，了解这个领域发生了啥。最近，cursor 和 aider
-这两个项目成功勾起了我的兴趣。cursor 要钱，玩不起，但 aider 可以。
+刚接触 AI 编辑器是在 10 月份，当时这对我来说还是个新奇的话题。
+现在 12 月，两个月过去了，周边同事或朋友几乎都用上了 cursor 或 windsurf。
+是个程序员可能都尝试或听说过了。有人喜欢它的 chat 功能，有人喜欢它的 tab 功能。
 
-Aider 定位是程序员的 AI 结对编程队友。它的输入是若干个代码文件以及你的提问；输出是新的代码文件，
-或者完善现有代码文件。我的阅读主要想解决自己的这些疑惑
-
-- [ ] 比 GitHub Copilot 好在哪？
-
-## cursor
-
-https://www.arguingwithalgorithms.com/posts/cursor-review.html
+[这篇文章][cursor-review] 对cursor 的介绍的不错。
 
 ## 并发模型
 
@@ -52,3 +46,32 @@ CSP 模型与 Actor 模型的差别（来自 AI 的解释）
 1. Actor 模型与“生产者/消费者”模型的关系？它们本身就不同一个抽象层级的概念。
 2. 数据库的 pipeline 模型是什么东西？和 CPU 的 pipeline 相似。
 3. “线程与锁”，“Actor 模型”，“CSP 模型” 这三个的异同？看一下七周七并发每个章节的复习章节。
+
+## 协程与事件循环
+
+协程需要一个循环来驱动它们的状态变化。
+
+比如对于 Python 的 asyncio 来说，在 Linux 环境下，它会使用 epoll 来驱动。
+那对于 goroutine 或者 rust 的协程，它们使用什么来驱动的呢？花了点时间研究了下，
+看起来它们会自己来实现。简单理解的话，它们会实现一个消息队列，然后轮询这个队列。
+下面两篇文章（尤其是第二篇）比较详细的描述了这个“驱动”，它称之为 scheduler。
+
+- https://kerkour.com/rust-async-await-what-is-a-runtime
+- https://tokio.rs/blog/2019-10-scheduler#the-next-generation-tokio-scheduler
+
+## Doris MOW 实现原理
+
+参考资料1：https://zhuanlan.zhihu.com/p/590643211
+
+2024-12-19：最近有种感觉是没有抓住这个话题的重点，这个东西可能应该鸽了。
+
+关键概念或问题
+1. 主键索引
+2. delete bitmap
+3. todo: 所有的“主键行号”到底是怎么计算的？
+
+在 Doris，Delete bitmap 在代码层对应了 “Roaring BitMap” 这个数据结构。这里涉及几个概念：Bitmap（位图），
+Roaring Bitmap（压缩位图）。Bitmap 实现了数字和 bit 一对一。Roaring Bitmap 是一种优化，
+处理稀疏数据时的性能更好，尤其是空间性能。
+
+[cursor-review]: https://www.arguingwithalgorithms.com/posts/cursor-review.html
