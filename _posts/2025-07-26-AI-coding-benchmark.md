@@ -1,5 +1,5 @@
 ---
-title: AI编程哪家强？Benchmark来一把
+title: AI编程哪家强？Benchmark搞一把
 date: 2025-07-26 10:35:00 +08:00
 permalink: /blogs/10024
 tags: [AI, coding, Aider, vscode]
@@ -129,10 +129,17 @@ def evaluate():
 	- Trae 似乎可以免费用，只是要排队。好像不能设置其它模型。
 	- Cursor 有免费额度，额度很小。
 
-值得一提的是，这里评测的背景是解决一个实际问题。最后再附加一下个人的综合性观点
+值得一提的是，模型真的很重要。不同的模型，测出来结果差异可能会差很远。
+
+还有个值得一提的是，这里评测的背景是解决一个实际问题。最后再附加一下个人的综合性观点
 1. 假设我很有钱、或者工作里面需要经常堆shi，我应该会选择 cursor。也会考虑 claude code。
 2. 在我钱不多、且编码不那么多的情况下，我会选择 Aider + VSCode(Copilot)
 3. Gemini Cli 和 Trae 感觉目前竞争力还差点。如果 Trae 让我免费用，我也乐意 🐶
+
+## 评测过程记录
+
+注：我也 review 了一下自己的评测过程记录，我发现我给 Aider 记录的比较详细（大概率是因为一开始时间充裕），
+给 Claude 记录的也比较详细（因为我对它期望比较高，而它失败了几次）。其它的记录就比较摘要了，我后面变懒了可能是一方面；但更重要的是，它们有太多的工具调用、很繁琐，不太好记录。
 
 ### Aider + deepseek-chat-v3-0324
 Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
@@ -140,7 +147,9 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 测试过程摘要
 - 我：解决一下这个问题：{problem_statement}
 - Aider：花了 10s 扫描了一遍整个项目
+	> ```
 	> Scanning repo: 100%|███████████████████████████| 2580/2580 [00:09<00:00, 260.12it/s]
+	> ```
 - Aider: 一波分析，比较准确的识别了问题所在的文件 `pylint/lint/expand_modules.py` 和 `pylint/lint/pylinter.py`，并且询问我是否要把这两个文件加入到聊天中。
   - 点评：Aider 分析的结果非常准确。可以看下 Aider 是怎样找到这两个文件的。
 	> ```
@@ -156,27 +165,33 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 	> ```
 - 我：连续两个 Enter（代表 yes，把文件加入到聊天中）
 - Aider: 输出了它的第一个解决方案
+	> ```
 	> I'll help fix the ignore paths behavior in recursive mode. The issue is that _discover_files() in pylinter.py doesn't properly
 	> apply the ignore patterns during recursive directory traversal. Here are the needed changes:
+	> ```
 	- 点评：上面是 Aider 的一部分分析，Aider 这里又精确的找到了问题所在的函数。
 - Aider: 自动执行了 lint，并询问我是否要修复这些 lint 错误
 - 我：输入 No
-	> 注：根据我过去的使用经验，Aider 的 lint 不一定能很好工作，可能会帮倒忙。几方面
-	>   1. 代码库本来可能就没有 lint，它 lint 的时候，报了很多老代码的问题。这时候修复它们不是一个好主意
-	>   2. 代码库的 lint 命令和 Aider 的 lint 命令可能不一样。导致结果帮倒忙。
-	>
-	> 但 Aider 自己在 benchmark 的时候，它在测试的过程中是会[自动执行 lint][swe-bench-lite] 的。
+	- 注：根据我过去的使用经验，Aider 的 lint 不一定能很好工作，可能会帮倒忙。几方面
+	    1. 代码库本来可能就没有 lint，它 lint 的时候，报了很多老代码的问题。这时候修复它们不是一个好主意
+	    2. 代码库的 lint 命令和 Aider 的 lint 命令可能不一样。导致结果帮倒忙。
+	- 但 Aider 自己在 benchmark 的时候，它在测试的过程中是会[自动执行 lint][swe-bench-lite] 的。
 - 我：在另外一个终端中执行一下老的测试用例集(PASS-TO-PASS)，发现有两个之前能跑过的测试，现在跑不过了。于是把错误摘要信息贴给它。
+	> ```
    	> 有两个测试跑失败了：FAILED tests/test_self.py::TestRunTC::test_recursive - AttributeError: 'PyLinter' object has no attribute '_ignore_paths'
    	> FAILED tests/test_self.py::TestRunTC::test_recursive_current_dir - AttributeError: 'PyLinter' object has no attribute '_ignore_paths'
+	> ```
 - Aider：又是一波操作
 - Aider：又问我是否 lint
 - 我：输入 No
 - 我：再次执行一遍测试用例集，发现又有了新的报错。仍然简单的把错误贴给它。
+	> ```
 	> 这两个测试还是报错，而且还是报类似的错，变量没有初始化：FAILED tests/test_self.py::TestRunTC::test_recursive - NameError: name '_is_in_ignore_list_re' is not defined
 	> FAILED tests/test_self.py::TestRunTC::test_recursive_current_dir - NameError: name '_is_in_ignore_list_re' is not defined
+	> ```
 - Aider：还是一波操作，修改了一波代码。接着就是问我是否 lint（我是不）
 - 我：再次执行测试用例。发现这下测试都跑不起来了。由于错误信息不多，我就把错误信息完整贴给了它。
+	> ```
 	> 现在测试都跑不了了： pytest tests/test_self.py
 	> /Users/cosven/code/pylint/.venv/lib/python3.8/site-packages/_pytest/config/__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.
 	> Plugin: helpconfig, Hook: pytest_cmdline_parse
@@ -195,6 +210,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 	> pylint/lint/expand_modules.py:8: in <module>
 	>     from pylint.lint.utils import _is_in_ignore_list_re
 	> E   ImportError: cannot import name '_is_in_ignore_list_re' from partially initialized module 'pylint.lint.utils' (most likely due to a circular import) (/Users/cosven/code/pylint/pylint/lint/utils.py)
+	> ```
 - Aider：又是一波一样的操作。
 - 我：再次执行测试用例。发现老的测试用例都可以跑过了
 	- 点评：Aider 这里虽然解决了问题，但我人肉看了，它的解决方案不是最佳（它新增了一个文件来解决循环引用的问题，但其实不需要）。
@@ -210,6 +226,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 - Gemini: 上来说自己想按照问题描述的步骤来复现一下。问我是否同意？
 - 我：不用复现了，直接修复吧 (我思考了一下，感觉复现比较复杂，所以让它直接修复。)
 - Gemini：
+	> ```
 	> 我将首先搜索代码库，找到处理文件收集和递归逻辑的部分，然后进行修复。我推测问题可能出在 pylint/lint/discover.py 文件中。
  	> ✔  FindFiles 'pylint/lint/discover.py ---> No files found
 	> ✦ 好的，看来我猜错了文件名。
@@ -226,6 +243,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 	> ...省略一些代码...
 	> ...省略一些代码和一些分析...
 	> 询问我是否同意修改？
+	> ```
 - 我：同意
 - Gemini: apply 了上面的修改建议，并问我是否需要运行 pytest 命令
 - 我：不需要，并自己运行 swe-bench 中指定的测试用例 (PASS-TO-PASS)。
@@ -264,8 +282,10 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 	- 点评：这一次 Gemini 比第一次测试的时候，表现得更聪明一些。思考两分钟还是有点效果的 :)
 - 我：全部回答 yes（除了有一个问题：它想帮我加测试，这个我拒绝了）
 - 我：手动执行一遍测试用例(PASS-TO-PASS)，发现报错
+	> ```
 	> 有两个测试跑失败了：FAILED tests/test_self.py::TestRunTC::test_recursive - AttributeError: 'PyLinter' object has no attribute '_ignore_paths'
     > FAILED tests/test_self.py::TestRunTC::test_recursive_current_dir - AttributeError: 'PyLinter' object has no attribute '_ignore_paths'
+	> ```
 	- 点评：这个报错和 Aider 第一次修复的报错很相似
 - Gemini: 又来了一波修复，并询问我是否接受
 	- 点评：Gemini 会把一次改动拆分成很多步骤，会提很多问题。而 Aider 则是一波流。
@@ -273,20 +293,6 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 - Gemini: 又问了我三个问题
 - 我：全部接受。
 - 我：手动执行一遍测试用例(PASS-TO-PASS)，发现测试都可以过。然后执行(FAIL-TO-PASS)，发现测试用例都可以跑过了。
-
-```
-│  Cumulative Stats (4 Turns)      │
-│                                  │
-│  Input Tokens           474,114  │
-│  Output Tokens            3,256  │
-│  Thoughts Tokens         12,165  │
-│  Cached Tokens  311,020 (63.5%)  │
-│  ──────────────────────────────  │
-│  Total Tokens           489,535  │
-│                                  │
-│  Total duration (API)    3m 32s  │
-│  Total duration (wall)  20m 49s  │
-```
 
 ### Claude Code + deepseek-chat-v3-0324 + deepseek-r1-0528
 
@@ -302,6 +308,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 
 - 我：`解决一下这个问题：{problem_statement}`
 - Claude Code: （思考了几十秒之后，就停止了）
+	> ```
 	> ⏺ Update Todos
 	>   ⎿  ☐ Search for the implementation of recursive file handling in Pylint to understand how ignore patterns are applied
 	>      ☐ Investigate how ignore paths are processed in Pylint's codebase
@@ -312,7 +319,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 	>   json
 	>   {"description": "Investigate ignore paths processing", "prompt": "Investigate how ignore paths are processed in Pylint's codebase, focusing on the handling of --ignore,
 	>   --ignore-paths, and --ignore-patterns settings."}
-	>
+	> ```
 - 我：写代码解决问题呀
 - Claude Code: （还是给我弹出来 tool_call_begin 的块，估计是模型和它不兼容，只能放弃）
 
@@ -322,6 +329,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 
 - 我：`解决一下这个问题：{problem_statement}`
 - Trae(Builder):
+	> ```
 	> 我需要查看Pylint的源代码，找出递归模式下忽略文件的实现逻辑，以解决忽略设置在递归模式下不生效的问题。
 	>    Search codebase for 'recursive mode ignore files implementation'
 	> ...省略它的若干代码搜索...
@@ -334,6 +342,7 @@ Aider (openrouter/deepseek/deepseek-chat-v3-0324:free)
 	>
 	> 我发现了问题所在。...blabla省略若干分析...
 	> 最后它改了一行代码，并且加了一个测试用例
+	> ```
 	- 点评：Aider 和 Gemini 基本都在第一轮就分析了问题对应的代码，而它没有。
 	  它的行为和 Gemini 很相似，都是一波搜索加分析。可惜的是它分析的结果不对。
 - 我：接受修改一行的修改，但决绝了添加测试用例
@@ -360,12 +369,14 @@ Cursor 都测试完了，这个队还在排，才排到了 100+，吐了。直�
 
 - 我：`解决一下这个问题：{problem_statement}`
 - Cursor: 和 Trae 有点像（有点倒反天罡），一顿 grep 加查看文件，最后得出结论
+	> ```
 	> 问题根因
 	> --recursive=y 时，Pylint 通过 _discover_files 递归遍历目录，但没有应用 ignore/ignore-patterns/ignore-paths 相关过滤，导致所有文件（包括应被忽略的）都被 lint。
 	> 但在非递归模式下，Pylint 会通过 expand_modules，而该函数会正确应用 ignore 相关选项。
 	> ...一堆分析...
 	> ...一堆分析...
 	> ...最后提出了一个代码修改方案，并问我接不接受...
+	> ```
 	- 点评1：Cursor 的这个 grep 展示就比较简洁，我比较喜欢。
 	  Trae 生怕我啥也不懂，把模型的弱智全给我展示出来 :)
 	  我想大部分程序员，看到这个 grep keyword 就懂它在干嘛。
@@ -373,8 +384,10 @@ Cursor 都测试完了，这个队还在排，才排到了 100+，吐了。直�
 - 我：行
 - Cursor：修改了代码，并让我确认
 - 我：在 UI 上点了 accept，并且手动在终端执行了一波(PASS-TO-PASS)测试。结果有两个用例失败了。
+	> ```
 	> 有两个测试失败了：FAILED tests/test_self.py::TestRunTC::test_recursive - AssertionError: expected output status 0, got 1. Below pylint output:
 	> FAILED tests/test_self.py::TestRunTC::test_recursive_current_dir - AssertionError: expected output status 0, got 1. Below pylint output:
+	> ```
 	- 点评：有趣的是，这些 AI 改了之后，失败的用例都是这两个
 - Cursor: 从“失败原因分析”，到“解决思路”，最后“修复建议”
 - 我：行
@@ -388,11 +401,15 @@ Cursor 都测试完了，这个队还在排，才排到了 100+，吐了。直�
 
 - 我：`解决一下这个问题：{problem_statement}`
 - Trae：两次 grep 加两个文件查看，定位到了问题。并且给出了代码修复的建议。
+	> ```
 	> I've analyzed the issue with Pylint not respecting ignore patterns in recursive mode. The problem occurs because the _discover_files method in pylinter.py doesn't apply the ignore patterns when recursively discovering files, while the ignore patterns are only applied later in _expand_files .
+	> ```
 	- 点评：指定了一个模型之后，这个问题定位能力感觉变强了一点点。可惜这里不全对。
 - 我：接受。并且手动去跑一下(PASS-TO-PASS)测试。也是两个测试报错了
+	> ```
 	> 有两个测试报错了：FAILED tests/test_self.py::TestRunTC::test_recursive - NameError: name 'self' is not defined
 	> FAILED tests/test_self.py::TestRunTC::test_recursive_current_dir - NameError: name 'self' is not defined
+	> ```
 - Trae: 好家伙，它直接建议我修改我的测试用例。
 - 我：我教育了一下它（其实我还挺怕教育它的，一般来说模型是纠正不过来的）
 	> 不要改测试用例，测试没通过，说明你的解决方案、或者代码有问题。
@@ -506,6 +523,7 @@ claude-sonnet-3.7 第一波分析的方向也不完全对，和 deepseek 差不�
 	- 然后它觉得自己找到了问题所在。自动进入 todo list 的第二项：写一个用例来复现，这时它来询问我
 - 我： 跳过问题复现这一步，直接修复吧（和之前其它测试一样，让它跳过）
 - Claude Code: 它按照要求跳过了这一步，进入了下一步
+	> ```
 	> ⏺ Update Todos
 	>   ⎿  ☒ Investigate current recursive mode implementation
 	>      ☒ Reproduce the bug with test case
@@ -513,8 +531,10 @@ claude-sonnet-3.7 第一波分析的方向也不完全对，和 deepseek 差不�
 	>      ☐ Fix the ignore logic implementation
 	>      ☐ Add regression tests
 	>      ☐ Run existing tests to ensure no regressions
+	> ```
 	- 点评：这里特意把它的 todo list 贴了一下，我觉得得夸一下，它这个 UI 做的还不错，比较清晰的标记自己进入了第三步。（终端里面看是有颜色的，非常清晰）
 	- 接着它就把自己的修复代码给输出出来了。
+		> ```
 		> ⏺ Let me look at how the ignore logic is currently implemented by examining the expand_modules function:
 		> ...省略...
 		> ⏺ Now I need to modify the _discover_files method .... 省略...
@@ -528,6 +548,7 @@ claude-sonnet-3.7 第一波分析的方向也不完全对，和 deepseek 差不�
 		> ...省略...
 		> ...省略...
 		> ⏺ Great! There are already some recursive tests. Now let me add a test for the ignore functionality:
+		> ```
 		- 点评：值得一提的是，它输出代码的过程似乎也是分步的，先改一个代码文件；然后说接下来我要改第二个代码文件。但我觉得它应该是先总体规划好了，然后展示的时候，给人感觉是一步一步的。
 - 我：（它想给我加测试用例，我没有回复它）我去跑了 PASS-TO-PASS 测试，发现符合预期。然后再去跑 FAIL-TO-PASS 测试，发现符合预期，问题已经解决。
 
@@ -535,18 +556,26 @@ claude-sonnet-3.7 第一波分析的方向也不完全对，和 deepseek 差不�
 1. 没有每个步骤都让我确认（这里我也不太清楚为什么，命名运行参数都是一样的）。而该让我确认的，也让我确认了，比如它想复现，我就有机会拒绝它这个提议。
 2. 定位问题更准，同样是一波搜索加文件读取，这次，它就准确的找到了问题，并且一次性修复。还是牛的。
 
+# 总结一下
+
+这次搞这个评测，自己感觉还是挺好玩的，也还算满意，毕竟每个环节做到了满足预期的程度。
+但是呢，这东西还是太花时间了，把我周末调研装修的+峡谷娱乐的时间都占用了。
+
+结尾再很主观的点评一下 Trae（你懂哪种恨铁不成钢的感受么？）。和 Aider。
+
+为了支持国产搞 IDE 的厂商（其实更多是因为它基础功能免费 :) ）这次特意试用了一下 Trae，
+前段时间也偶尔用过。几点感受
+1. Trae 的免费 tab 补全还是让我挺心动的，其它功能没让我觉得眼前一亮。SOLO 要付费，我穷。
+2. 它的排队机制是个双刃剑，看似给了我希望（可能十几页有一点点吧）。但大部分情况则等了个寂寞。
+	关键是 Auto 也要排队，还不如直接给我每天免费用几次，让我有个明确预期。
+3. Remote 开发功能用不了（看 issue 是说 macOS 不支持）。我就想，
+	ssh 不是 VSCode 最杀手级的功能么，你竟然都不支持。难绷，太难绷了。
+4. 还是挺希望 Trae 能搞成的，毕竟国内就没有一个像样的开发工具。把握机会争点气吧 狗头
+
+Aider 做的真的很棒。博客、文档、benchmark learborad、工具本身，都非常棒。
+但奇怪的就是这个项目就一个人在合并代码，我很担心它的前途。希望它不会倒闭 🤯
 
 [aider-bench]: https://aider.chat/docs/leaderboards/
 [swe-bench]: https://www.swebench.com/
 [pylint-dev__pylint-6528]: https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified/viewer/default/test?f%5Brepo%5D%5Bvalue%5D=%27pylint-dev%2Fpylint%27&sort%5Bcolumn%5D=created_at&sort%5Bdirection%5D=desc&sort%5Btransform%5D=length&row=325
 
-# 总结一下
-
-点评一下写博客的工具：为了支持国产搞 IDE 的厂商（其实更多是因为它基础功能免费 :) ）o这次特意试用了一下 Trae，
-前段时间也偶尔用过。几点感受
-1. Trae 的免费 tab 补全还是让我挺心动的，其它没让我觉得眼前一亮。
-2. 它的排队机制也有点无语，看似给了我希望，实则等了个寂寞。
-	关键是 Auto 也要排队，还不如直接给我每天免费用几次，让我有个明确预期。
-3. Remote 开发功能用不了（看 issue 是说 macOS 不支持）。我就想，
-	ssh 不是 VSCode 最杀手级的功能么，你竟然都不支持。难绷，太难绷了。
-4. 还是挺希望 Trae 能搞成的，毕竟国内就没有一个像样的开发工具。把握机会争点气吧 狗头
