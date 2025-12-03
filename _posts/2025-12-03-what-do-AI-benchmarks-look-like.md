@@ -6,7 +6,7 @@ tags: [AI, benchmark]
 categories: [稍微正经点的]
 ---
 
-**TL;DR** benchmark 有价值，榜单价值偏小。（IMO：给效率算分，榜单就能恢复它的价值。）
+**TL;DR** Benchmark 本身有价值，但分数‘没价值’。
 
 不知道你们有没有这些疑问哈
 1. 大模型发布时，大都会刷榜（跑 benchmark），这些 benchmark 的参考价值怎么样？里面都有些什么样的测试题？能反应模型能力强弱么？
