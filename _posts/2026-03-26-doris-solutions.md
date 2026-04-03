@@ -1,7 +1,7 @@
 ---
 title: Doris 对一些数据库经典问题的解决方案
 date: 2026-03-26 20:04:00 +08:00
-permalink: /blogs/10029
+permalink: /blogs/10031
 tags: [database]
 categories: [笔记]
 ---
